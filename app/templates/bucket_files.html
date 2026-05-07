@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bucket Files</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; background: #f7f7f7; color: #222; }
+    .card { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 16px; max-width: 900px; }
+    h1 { margin-top: 0; font-size: 20px; }
+    .muted { color: #666; font-size: 13px; }
+    ul { margin-top: 12px; }
+    li { margin: 6px 0; }
+    code { background: #f2f2f2; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>{{ main_bucket }} / {{ sub_bucket }}</h1>
+    <p class="muted">Folder: <code>{{ folder_path }}</code></p>
+    {% if pdf_files %}
+      <ul>
+        {% for name in pdf_files %}
+          <li>{{ name }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No PDFs found in this folder yet.</p>
+    {% endif %}
+  </div>
+</body>
+</html>

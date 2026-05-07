@@ -1,0 +1,13 @@
+venv/
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdf
+*.zip
+*.sqlite3
+datasets/
+models/
+checkpoints/
+uploads/

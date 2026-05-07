@@ -1,0 +1,3060 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ADP — Automated Document Processor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f5f3ef;
+        --bg2: #eeecea;
+        --bg3: #e4e1dc;
+        --sidebar: #0e1117;
+        --sidebar2: #181c26;
+        --sidebar3: #232837;
+        --accent: #d97b20;
+        --accent2: #f0a34a;
+        --accent-dim: rgba(217, 123, 32, 0.12);
+        --text: #1a1917;
+        --text2: #6b6860;
+        --text3: #a0998f;
+        --white: #ffffff;
+        --border: #d8d4ce;
+        --border2: #c8c4bc;
+        --success: #2e7d52;
+        --success-bg: #eaf5ef;
+        --info: #1b5fa8;
+        --info-bg: #ebf3fc;
+        --warn: #9c6c10;
+        --warn-bg: #fdf3e2;
+        --danger: #c0392b;
+        --danger-bg: #fde9e7;
+        --radius: 10px;
+        --radius-lg: 14px;
+        --sidebar-w: 240px;
+        --font: "DM Sans", sans-serif;
+        --mono: "JetBrains Mono", monospace;
+        --display: "Sora", sans-serif;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.06);
+        --shadow-md:
+          0 2px 8px rgba(0, 0, 0, 0.08), 0 8px 32px rgba(0, 0, 0, 0.1);
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+        font-size: 14px;
+      }
+
+      .sidebar {
+        width: var(--sidebar-w);
+        background: var(--sidebar);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        height: 100vh;
+        overflow-y: auto;
+      }
+      .sidebar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .sidebar::-webkit-scrollbar-thumb {
+        background: var(--sidebar3);
+      }
+      .sb-logo {
+        padding: 22px 20px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .sb-logo-mark {
+        width: 32px;
+        height: 32px;
+        background: var(--accent);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 13px;
+        color: #fff;
+        letter-spacing: -0.5px;
+        flex-shrink: 0;
+      }
+      .sb-logo-name {
+        font-family: var(--display);
+        font-size: 12px;
+        font-weight: 600;
+        color: #fff;
+        line-height: 1.2;
+      }
+      .sb-logo-sub {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.35);
+        font-weight: 400;
+        margin-top: 1px;
+      }
+      .sb-section {
+        padding: 16px 12px 6px;
+      }
+      .sb-label {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.28);
+        padding: 0 8px;
+        margin-bottom: 6px;
+      }
+      .sb-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 10px;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: all 0.15s;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 13px;
+        font-weight: 400;
+        position: relative;
+        user-select: none;
+      }
+      .sb-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .sb-item.active {
+        background: rgba(217, 123, 32, 0.18);
+        color: #f0a34a;
+      }
+      .sb-item.active .sb-icon {
+        color: #f0a34a;
+      }
+      .sb-icon {
+        font-size: 15px;
+        width: 16px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .sb-badge {
+        margin-left: auto;
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 10px;
+        font-family: var(--mono);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .sb-item.active .sb-badge {
+        background: rgba(217, 123, 32, 0.3);
+        color: #f0a34a;
+      }
+      .sb-sub {
+        margin-left: 16px;
+      }
+      .sb-sub .sb-item {
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+      .sb-bucket-header {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 7px 10px;
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 12px;
+        transition: all 0.15s;
+        border-radius: 7px;
+      }
+      .sb-bucket-header:hover {
+        color: rgba(255, 255, 255, 0.65);
+      }
+      .sb-bucket-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .sb-chevron {
+        margin-left: auto;
+        font-size: 10px;
+        transition: transform 0.2s;
+      }
+      .sb-chevron.open {
+        transform: rotate(90deg);
+      }
+      .sb-bottom {
+        margin-top: auto;
+        padding: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .sb-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .sb-status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #2ecc71;
+        box-shadow: 0 0 6px rgba(46, 204, 113, 0.5);
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      .sb-status-txt {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.45);
+      }
+
+      .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .topbar {
+        height: 56px;
+        background: var(--white);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 28px;
+        gap: 16px;
+        flex-shrink: 0;
+      }
+      .mobile-menu-btn {
+        display: none;
+      }
+      .topbar-title {
+        font-family: var(--display);
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .topbar-breadcrumb {
+        font-size: 12px;
+        color: var(--text3);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .topbar-sep {
+        color: var(--border2);
+      }
+      .topbar-actions {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 7px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        transition: all 0.15s;
+        font-family: var(--font);
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: #c46e1a;
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--text2);
+        border: 1px solid var(--border);
+      }
+      .btn-ghost:hover {
+        background: var(--bg2);
+        color: var(--text);
+      }
+      .btn-sm {
+        padding: 5px 10px;
+        font-size: 12px;
+      }
+      .content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 28px;
+      }
+      .content::-webkit-scrollbar {
+        width: 6px;
+      }
+      .content::-webkit-scrollbar-thumb {
+        background: var(--bg3);
+        border-radius: 3px;
+      }
+      .view {
+        display: none;
+      }
+      .view.active {
+        display: block;
+      }
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 28px;
+      }
+      .stat-card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        padding: 18px 20px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+      }
+      .stat-label {
+        font-size: 11px;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 500;
+        margin-bottom: 8px;
+      }
+      .stat-num {
+        font-family: var(--display);
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--text);
+        letter-spacing: -0.5px;
+      }
+      .stat-sub {
+        font-size: 11px;
+        color: var(--text3);
+        margin-top: 4px;
+      }
+      .stat-chip {
+        display: inline-block;
+        font-size: 10px;
+        padding: 2px 7px;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+      .chip-up {
+        background: #eaf5ef;
+        color: var(--success);
+      }
+      .chip-warn {
+        background: var(--warn-bg);
+        color: var(--warn);
+      }
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      .section-title {
+        font-family: var(--display);
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .doc-table {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+      .doc-table table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .doc-table th {
+        padding: 10px 16px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        background: var(--bg);
+      }
+      .doc-table td {
+        padding: 12px 16px;
+        font-size: 13px;
+        color: var(--text);
+        border-bottom: 1px solid var(--border);
+      }
+      .doc-table tr:last-child td {
+        border-bottom: none;
+      }
+      .doc-table tr:hover td {
+        background: var(--bg);
+      }
+      .doc-name {
+        font-weight: 500;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .doc-icon {
+        font-size: 16px;
+      }
+      .mono {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text3);
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        padding: 3px 9px;
+        border-radius: 20px;
+        font-weight: 500;
+      }
+      .pill-transact {
+        background: #ebf3fc;
+        color: #1b5fa8;
+      }
+      .pill-cert {
+        background: #eaf5ef;
+        color: #2e7d52;
+      }
+      .pill-sub {
+        background: var(--bg2);
+        color: var(--text2);
+        font-size: 10px;
+        padding: 2px 7px;
+      }
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .s-done {
+        background: #2ecc71;
+      }
+      .s-proc {
+        background: #f39c12;
+        animation: pulse 1.5s infinite;
+      }
+      .s-queue {
+        background: #bdc3c7;
+      }
+      .upload-wrap {
+        max-width: 680px;
+        margin: 0 auto;
+      }
+      .drop-zone {
+        border: 2px dashed var(--border2);
+        border-radius: var(--radius-lg);
+        padding: 60px 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: var(--white);
+        position: relative;
+        overflow: hidden;
+      }
+      .drop-zone:hover,
+      .drop-zone.drag {
+        border-color: var(--accent);
+        background: var(--accent-dim);
+      }
+      .drop-zone.drag .drop-icon {
+        transform: scale(1.1);
+      }
+      .drop-icon {
+        font-size: 44px;
+        margin-bottom: 16px;
+        display: block;
+        transition: transform 0.2s;
+      }
+      .drop-title {
+        font-family: var(--display);
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text);
+      }
+      .drop-sub {
+        font-size: 13px;
+        color: var(--text3);
+        line-height: 1.6;
+      }
+      .drop-sub span {
+        color: var(--accent);
+        cursor: pointer;
+        font-weight: 500;
+      }
+      #file-input {
+        display: none;
+      }
+      .upload-opts {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        flex-wrap: wrap;
+      }
+      .opt-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        background: var(--bg2);
+        font-size: 12px;
+        color: var(--text2);
+      }
+      .opt-chip span {
+        font-size: 14px;
+      }
+      .proc-wrap {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        padding: 32px;
+        margin-top: 24px;
+        display: none;
+      }
+      .proc-file {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 28px;
+        padding: 14px;
+        background: var(--bg);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+      }
+      .proc-file-icon {
+        font-size: 24px;
+      }
+      .proc-file-name {
+        font-weight: 500;
+        font-size: 14px;
+      }
+      .proc-file-size {
+        font-size: 11px;
+        color: var(--text3);
+        margin-top: 2px;
+      }
+      .proc-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .proc-step {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border);
+        position: relative;
+      }
+      .proc-step:last-child {
+        border-bottom: none;
+      }
+      .proc-step-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+        transition: all 0.3s;
+      }
+      .proc-step-icon.wait {
+        background: var(--bg2);
+        color: var(--text3);
+      }
+      .proc-step-icon.running {
+        background: var(--warn-bg);
+        color: var(--warn);
+        animation: spin 0.8s linear infinite;
+      }
+      .proc-step-icon.done {
+        background: var(--success-bg);
+        color: var(--success);
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .proc-step-info {
+        flex: 1;
+      }
+      .proc-step-name {
+        font-weight: 500;
+        font-size: 13px;
+      }
+      .proc-step-detail {
+        font-size: 11px;
+        color: var(--text3);
+        margin-top: 2px;
+        font-family: var(--mono);
+      }
+      .proc-progress {
+        height: 3px;
+        background: var(--bg3);
+        border-radius: 2px;
+        margin-top: 8px;
+        overflow: hidden;
+      }
+      .proc-progress-bar {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 2px;
+        transition: width 0.4s ease;
+      }
+      .result-wrap {
+        margin-top: 24px;
+        display: none;
+      }
+      .result-header {
+        background: var(--white);
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        border: 1px solid var(--border);
+        border-bottom: none;
+        padding: 20px 24px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .result-body {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        padding: 20px 24px;
+      }
+      .result-section {
+        margin-bottom: 20px;
+      }
+      .result-section-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 12px;
+      }
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .info-field {
+        background: var(--bg);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+      }
+      .info-field-label {
+        font-size: 10px;
+        color: var(--text3);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 5px;
+      }
+      .info-field-value {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+      }
+      .info-field-value.mono {
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .info-field.confidence-full {
+        grid-column: 1 / -1;
+        text-align: center;
+      }
+      .info-field.confidence-full .info-field-label,
+      .info-field.confidence-full .info-field-value {
+        text-align: center;
+        font-weight: 700;
+      }
+      .result-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+      }
+      .doc-search-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .search-input-wrap {
+        position: relative;
+        flex: 1;
+        max-width: 380px;
+      }
+      .search-input {
+        width: 100%;
+        padding: 8px 12px 8px 36px;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        background: var(--white);
+        font-size: 13px;
+        font-family: var(--font);
+        color: var(--text);
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .search-input:focus {
+        border-color: var(--accent);
+      }
+      .search-icon {
+        position: absolute;
+        left: 11px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text3);
+        font-size: 15px;
+      }
+      .filter-chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .filter-chip {
+        padding: 5px 12px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        font-size: 12px;
+        cursor: pointer;
+        background: var(--white);
+        color: var(--text2);
+        transition: all 0.15s;
+      }
+      .filter-chip:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .filter-chip.active {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .buckets-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .group-buckets-panel {
+        margin-top: 18px;
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        padding: 16px;
+      }
+      .group-buckets-title {
+        font-family: var(--display);
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 12px;
+      }
+      .group-bucket-item {
+        background: #d9f3df;
+        border: 1px solid #c1e6cb;
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 8px;
+        font-size: 13px;
+      }
+      .group-pdf-list {
+        margin-top: 6px;
+        padding-left: 18px;
+      }
+      .group-pdf-list li {
+        margin: 4px 0;
+        font-size: 12px;
+      }
+      .group-pdf-link {
+        color: #1b5fa8;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+      .bucket-col {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+      .bucket-col-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .bucket-col-title {
+        font-family: var(--display);
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .bucket-col-count {
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin-left: auto;
+      }
+      .bucket-col-body {
+        padding: 14px;
+      }
+      .sub-group {
+        margin-bottom: 14px;
+      }
+      .sub-group-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        cursor: pointer;
+        padding: 6px 8px;
+        border-radius: 6px;
+        transition: background 0.15s;
+      }
+      .sub-group-header:hover {
+        background: var(--bg);
+      }
+      .sub-group-name {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text2);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .sub-group-cnt {
+        font-size: 10px;
+        font-family: var(--mono);
+        color: var(--text3);
+      }
+      .doc-tile {
+        background: var(--bg);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        padding: 11px 13px;
+        margin-bottom: 7px;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .doc-tile:hover {
+        border-color: var(--accent);
+        background: var(--accent-dim);
+      }
+      .doc-tile-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .doc-tile-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .doc-tile-name {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 3px;
+      }
+      .doc-tile-meta {
+        font-size: 10px;
+        color: var(--text3);
+        font-family: var(--mono);
+        display: flex;
+        gap: 8px;
+      }
+      .doc-tile-actions {
+        flex-shrink: 0;
+        opacity: 0;
+        transition: opacity 0.15s;
+      }
+      .doc-tile:hover .doc-tile-actions {
+        opacity: 1;
+      }
+      .tile-btn {
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        background: var(--white);
+        font-size: 10px;
+        cursor: pointer;
+        color: var(--text2);
+        font-family: var(--font);
+        transition: all 0.15s;
+      }
+      .tile-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        backdrop-filter: blur(3px);
+      }
+      .modal-overlay.open {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .modal {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        width: 880px;
+        max-width: 95vw;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 80px rgba(0, 0, 0, 0.3);
+        transform: translateY(12px);
+        transition: transform 0.2s;
+      }
+      .modal-overlay.open .modal {
+        transform: translateY(0);
+      }
+      .modal-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+      .modal-title {
+        font-family: var(--display);
+        font-size: 14px;
+        font-weight: 600;
+        flex: 1;
+      }
+      .modal-close {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        color: var(--text2);
+        transition: all 0.15s;
+      }
+      .modal-close:hover {
+        background: var(--danger-bg);
+        color: var(--danger);
+        border-color: var(--danger);
+      }
+      .modal-body {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+      .pdf-viewer {
+        flex: 1;
+        background: var(--bg2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 12px;
+        padding: 28px;
+      }
+      .viewer-switch {
+        display: flex;
+        gap: 8px;
+        align-self: flex-start;
+      }
+      .viewer-pane {
+        width: 100%;
+        height: 100%;
+        min-height: 520px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--white);
+      }
+      .viewer-pane.hidden {
+        display: none;
+      }
+      .image-preview {
+        object-fit: contain;
+        padding: 12px;
+        background: var(--white);
+      }
+      .pdf-page-sim {
+        background: var(--white);
+        width: 320px;
+        min-height: 420px;
+        border-radius: 4px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .pdf-line {
+        height: 8px;
+        border-radius: 2px;
+        background: var(--bg3);
+      }
+      .pdf-line.thick {
+        height: 14px;
+        width: 60%;
+      }
+      .pdf-line.short {
+        width: 45%;
+      }
+      .pdf-line.medium {
+        width: 70%;
+      }
+      .pdf-line.xshort {
+        width: 30%;
+      }
+      .modal-info {
+        width: 260px;
+        border-left: 1px solid var(--border);
+        padding: 20px;
+        overflow-y: auto;
+        flex-shrink: 0;
+      }
+      .modal-info-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 12px;
+      }
+      .modal-field {
+        margin-bottom: 14px;
+      }
+      .modal-field-label {
+        font-size: 10px;
+        color: var(--text3);
+        font-weight: 500;
+        margin-bottom: 3px;
+      }
+      .modal-field-value {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+      }
+      .modal-field-value.mono {
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+      .breakdown-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .correct-section {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+      }
+      .correct-label {
+        font-size: 11px;
+        color: var(--text3);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 8px;
+      }
+      .select {
+        width: 100%;
+        padding: 7px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--white);
+        font-size: 12px;
+        font-family: var(--font);
+        color: var(--text);
+        outline: none;
+        cursor: pointer;
+        margin-bottom: 8px;
+      }
+      .select:focus {
+        border-color: var(--accent);
+      }
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text3);
+      }
+      .fade-in {
+        animation: fadeIn 0.3s ease forwards;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .notif {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: var(--text);
+        color: #fff;
+        padding: 12px 18px;
+        border-radius: var(--radius);
+        font-size: 13px;
+        z-index: 2000;
+        opacity: 0;
+        transform: translateY(8px);
+        transition: all 0.25s;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .notif.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .sidebar-backdrop {
+        display: none;
+      }
+      @media (max-width: 1400px) {
+        .stats-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .info-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 900px) {
+        .content {
+          padding: 18px;
+        }
+        .topbar {
+          padding: 0 16px;
+          gap: 10px;
+        }
+        .topbar-breadcrumb {
+          display: none;
+        }
+        .topbar-actions {
+          gap: 6px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+        .btn {
+          padding: 6px 10px;
+          font-size: 12px;
+        }
+        .doc-table {
+          overflow-x: auto;
+        }
+        .doc-table table {
+          min-width: 720px;
+        }
+        .result-header,
+        .result-body,
+        .proc-wrap {
+          padding: 16px;
+        }
+        .result-actions {
+          flex-wrap: wrap;
+        }
+        .modal {
+          width: 96vw;
+          max-height: 94vh;
+        }
+        .modal-body {
+          flex-direction: column;
+        }
+        .modal-info {
+          width: 100%;
+          border-left: none;
+          border-top: 1px solid var(--border);
+        }
+        .viewer-pane {
+          min-height: 360px;
+        }
+      }
+      @media (max-width: 640px) {
+        .content {
+          padding: 12px;
+        }
+        .topbar-title {
+          font-size: 14px;
+        }
+        .section-title {
+          font-size: 13px;
+        }
+        .stat-num {
+          font-size: 22px;
+        }
+        .stat-label,
+        .stat-sub {
+          font-size: 10px;
+        }
+        .doc-table th {
+          font-size: 10px;
+          padding: 9px 12px;
+        }
+        .doc-table td {
+          font-size: 12px;
+          padding: 10px 12px;
+        }
+        .pill {
+          font-size: 10px;
+        }
+        .proc-step-name {
+          font-size: 12px;
+        }
+        .proc-step-detail {
+          font-size: 10px;
+        }
+        .result-section-title,
+        .info-field-label {
+          font-size: 9px;
+        }
+        .info-field-value {
+          font-size: 12px;
+        }
+        .modal-title {
+          font-size: 13px;
+        }
+        .modal-info-title,
+        .modal-field-label {
+          font-size: 10px;
+        }
+        .modal-field-value {
+          font-size: 12px;
+        }
+        .stats-row,
+        .info-grid {
+          grid-template-columns: 1fr;
+        }
+        .breakdown-grid {
+          grid-template-columns: 1fr;
+        }
+        .search-input-wrap {
+          max-width: none;
+        }
+        .doc-search-bar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .upload-wrap {
+          max-width: 100%;
+        }
+        .drop-zone {
+          padding: 34px 16px;
+        }
+        .drop-title {
+          font-size: 16px;
+        }
+        .result-header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .result-actions .btn {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+      @media (max-width: 1100px) {
+        .stats-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .buckets-grid {
+          grid-template-columns: 1fr;
+        }
+        .mobile-menu-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .sidebar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: min(82vw, 300px);
+          z-index: 1200;
+          transform: translateX(-100%);
+          transition: transform 0.22s ease;
+          box-shadow: var(--shadow-md);
+        }
+        body.sidebar-open .sidebar {
+          transform: translateX(0);
+        }
+        .sidebar-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.35);
+          z-index: 1100;
+        }
+        body.sidebar-open .sidebar-backdrop {
+          display: block;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sb-logo">
+        <div class="sb-logo-mark">ADP</div>
+        <div>
+          <div class="sb-logo-name">DocProcessor</div>
+          <div class="sb-logo-sub">Automated Document AI</div>
+        </div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">Main</div>
+        <div class="sb-item active" onclick="showView('dashboard', this)">
+          <span class="sb-icon">⬛</span> Dashboard
+        </div>
+        <div class="sb-item" onclick="showView('upload', this)">
+          <span class="sb-icon">⬆</span> Upload Document
+        </div>
+      </div>
+      <div class="sb-section" id="sidebar-groups">
+        <div class="sb-label">Document Groups</div>
+        <div
+          class="sb-item"
+          onclick="
+            showView('documents', this);
+            filterBucket('all');
+          "
+        >
+          <span class="sb-icon">🗂</span> All Documents
+          <span class="sb-badge" id="sidebar-total-count">0</span>
+        </div>
+        <div class="sb-sub" id="sidebar-buckets"></div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">System</div>
+      </div>
+      <div class="sb-bottom">
+        <div class="sb-status">
+          <div class="sb-status-dot"></div>
+          <div class="sb-status-txt">Model v2.3 · CPU 38% · &lt;180 ms</div>
+        </div>
+      </div>
+    </aside>
+    <div
+      id="sidebar-backdrop"
+      class="sidebar-backdrop"
+      onclick="closeMobileSidebar()"
+    ></div>
+    <main class="main">
+      <div class="topbar">
+        <button
+          class="btn btn-ghost btn-sm mobile-menu-btn"
+          onclick="toggleMobileSidebar()"
+        >
+          ☰
+        </button>
+        <div id="topbar-title" class="topbar-title">Dashboard</div>
+        <div id="topbar-breadcrumb" class="topbar-breadcrumb">
+          <span>ADP</span><span class="topbar-sep">›</span
+          ><span id="topbar-crumb">Overview</span>
+        </div>
+        <div class="topbar-actions">
+          <button
+            class="btn btn-ghost btn-sm"
+            onclick="showNotif('Export complete')"
+          >
+            ⬇ Export CSV
+          </button>
+          <button
+            class="btn btn-primary btn-sm"
+            onclick="showView('upload', null)"
+          >
+            + Upload PDF
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="view active fade-in" id="view-dashboard">
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-label">Total Documents</div>
+              <div class="stat-num" id="stat-total-docs">0</div>
+              <div class="stat-sub">
+                <span class="stat-chip chip-up">Live from storage</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Today's Avg Tokens / Doc</div>
+              <div class="stat-num" id="stat-processed-today">0</div>
+              <div class="stat-sub">
+                <span class="stat-chip chip-up">Today's Gemini usage</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Avg Tokens / Document</div>
+              <div class="stat-num" id="stat-pending-ocr">0</div>
+              <div class="stat-sub">
+                <span class="stat-chip chip-warn">Gemini token usage</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Avg Confidence</div>
+              <div class="stat-num" id="stat-model-accuracy">0%</div>
+              <div class="stat-sub">
+                <span class="stat-chip chip-up">Main classifier score</span>
+              </div>
+            </div>
+          </div>
+          <div class="section-header">
+            <div class="section-title">Recent Documents</div>
+            <button
+              class="btn btn-ghost btn-sm"
+              onclick="showView('documents', null)"
+            >
+              View all →
+            </button>
+          </div>
+          <div class="doc-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th>Main Bucket</th>
+                  <th>Sub Bucket</th>
+                  <th>Extracted: Date</th>
+                  <th>Extracted: Party</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="recent-table"></tbody>
+            </table>
+          </div>
+          <div style="margin-top: 24px">
+            <div class="section-header">
+              <div class="section-title">Classification Breakdown</div>
+            </div>
+            <div
+              class="breakdown-grid"
+            >
+              <div class="doc-table" style="padding: 20px">
+                <div
+                  style="
+                    font-size: 11px;
+                    color: var(--text3);
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                    margin-bottom: 14px;
+                  "
+                  id="breakdown-title-left"
+                >
+                  Bucket Breakdown
+                </div>
+                <div id="transact-breakdown"></div>
+              </div>
+              <div class="doc-table" style="padding: 20px">
+                <div
+                  style="
+                    font-size: 11px;
+                    color: var(--text3);
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                    margin-bottom: 14px;
+                  "
+                  id="breakdown-title-right"
+                >
+                  Sub-bucket Breakdown
+                </div>
+                <div id="cert-breakdown"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="view" id="view-upload">
+          <div class="upload-wrap">
+            <div
+              class="drop-zone"
+              id="drop-zone"
+              onclick="document.getElementById('file-input').click()"
+              ondragover="
+                event.preventDefault();
+                this.classList.add('drag');
+              "
+              ondragleave="this.classList.remove('drag')"
+              ondrop="handleDrop(event)"
+            >
+              <span class="drop-icon">📄</span>
+              <div class="drop-title">Drop your PDF here</div>
+              <div class="drop-sub">
+                Drag &amp; drop or
+                <span
+                  onclick="
+                    event.stopPropagation();
+                    document.getElementById('file-input').click();
+                  "
+                  >browse files</span
+                ><br />Supports any language · Image-based PDFs auto-detected ·
+                Max 20 MB
+              </div>
+              <div class="upload-opts">
+                <div class="opt-chip"><span>🌐</span> Multilingual</div>
+                <div class="opt-chip"><span>🔍</span> OCR fallback</div>
+                <div class="opt-chip"><span>⚡</span> &lt;1s response</div>
+                <div class="opt-chip"><span>🔒</span> Local processing</div>
+              </div>
+            </div>
+            <input
+              type="file"
+              id="file-input"
+              accept=".pdf"
+              onchange="handleFile(this.files[0])"
+            />
+            <div class="proc-wrap" id="proc-wrap">
+              <div class="proc-file">
+                <span class="proc-file-icon">📄</span>
+                <div>
+                  <div class="proc-file-name" id="proc-file-name">
+                    document.pdf
+                  </div>
+                  <div class="proc-file-size" id="proc-file-size">
+                    2.4 MB · PDF
+                  </div>
+                </div>
+                <div
+                  style="
+                    margin-left: auto;
+                    font-family: var(--mono);
+                    font-size: 11px;
+                    color: var(--text3);
+                  "
+                  id="proc-timer"
+                >
+                  0.0s
+                </div>
+              </div>
+              <div class="proc-steps">
+                <div class="proc-step" id="step-extract">
+                  <div class="proc-step-icon wait" id="step-extract-icon">
+                    📄
+                  </div>
+                  <div class="proc-step-info">
+                    <div class="proc-step-name">Text extraction</div>
+                    <div class="proc-step-detail" id="step-extract-detail">
+                      Waiting…
+                    </div>
+                    <div class="proc-progress">
+                      <div
+                        class="proc-progress-bar"
+                        id="step-extract-bar"
+                        style="width: 0"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="proc-step" id="step-classify">
+                  <div class="proc-step-icon wait" id="step-classify-icon">
+                    🧠
+                  </div>
+                  <div class="proc-step-info">
+                    <div class="proc-step-name">
+                      Classification (main &amp; sub bucket models)
+                    </div>
+                    <div class="proc-step-detail" id="step-classify-detail">
+                      Waiting…
+                    </div>
+                    <div class="proc-progress">
+                      <div
+                        class="proc-progress-bar"
+                        id="step-classify-bar"
+                        style="width: 0"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="proc-step" id="step-extract2">
+                  <div class="proc-step-icon wait" id="step-extract2-icon">
+                    🔎
+                  </div>
+                  <div class="proc-step-info">
+                    <div class="proc-step-name">Key info extraction (AI)</div>
+                    <div class="proc-step-detail" id="step-extract2-detail">
+                      Waiting…
+                    </div>
+                    <div class="proc-progress">
+                      <div
+                        class="proc-progress-bar"
+                        id="step-extract2-bar"
+                        style="width: 0"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="result-wrap fade-in" id="result-wrap">
+              <div class="result-header">
+                <div>
+                  <div
+                    style="
+                      font-size: 10px;
+                      color: var(--text3);
+                      font-weight: 600;
+                      text-transform: uppercase;
+                      letter-spacing: 0.07em;
+                      margin-bottom: 6px;
+                    "
+                  >
+                    Classification Result
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 10px;
+                      flex-wrap: wrap;
+                    "
+                  >
+                    <span
+                      class="pill"
+                      id="result-main-pill"
+                      style="font-size: 12px; padding: 5px 14px"
+                      >—</span
+                    ><span style="color: var(--text3); font-size: 16px">›</span
+                    ><span
+                      class="pill pill-sub"
+                      id="result-sub-pill"
+                      style="font-size: 12px; padding: 5px 12px"
+                      >—</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="result-conf"
+                  style="margin-left: auto; text-align: right"
+                >
+                  <div
+                    style="
+                      font-size: 10px;
+                      color: var(--text3);
+                      margin-bottom: 4px;
+                    "
+                  >
+                    Confidence
+                  </div>
+                  <div
+                    id="result-conf"
+                    style="
+                      font-size: 20px;
+                      font-weight: 700;
+                      font-family: var(--display);
+                      color: var(--success);
+                    "
+                  >
+                    —
+                  </div>
+                </div>
+              </div>
+              <div class="result-body">
+                <div class="result-section">
+                  <div class="result-section-title">
+                    Extracted Key Information
+                  </div>
+                  <div class="info-grid" id="result-info-grid"></div>
+                </div>
+                <div class="result-actions">
+                  <button
+                    class="btn btn-primary"
+                    id="classified-group-btn"
+                    onclick="saveToGroup()"
+                  >
+                    Open Classified Category
+                  </button>
+                  <button
+                    class="btn btn-ghost"
+                    id="need-review-btn"
+                    style="display: none"
+                    onclick="markNeedReview()"
+                  >
+                    Need to Review
+                  </button>
+                  <button
+                    class="btn btn-ghost"
+                    id="ai-identify-btn"
+                    style="display: none"
+                    onclick="runAiIdentification()"
+                  >
+                    Use AI Model
+                  </button>
+                  <button
+                    class="btn btn-ghost"
+                    onclick="showModal('result-doc')"
+                  >
+                    👁 View PDF
+                  </button>
+                  <div
+                    style="
+                      margin-left: auto;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                    "
+                  >
+                    <span style="font-size: 12px; color: var(--text3)"
+                      >Correct classification:</span
+                    ><select
+                      class="select"
+                      id="correction-select"
+                      style="width: min(440px, 100%); margin: 0"
+                      onchange="onCorrectionSelectionChange()"
+                    >
+                      <option value="">— Select —</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="view" id="view-documents">
+          <div class="doc-search-bar">
+            <div class="search-input-wrap">
+              <span class="search-icon">🔍</span
+              ><input
+                class="search-input"
+                id="search-input"
+                placeholder="Search documents…"
+                oninput="renderDocs()"
+              />
+            </div>
+            <div class="filter-chips" id="filter-chips">
+              <div
+                class="filter-chip active"
+                id="chip-all"
+                onclick="filterBucket('all')"
+              >
+                All (0)
+              </div>
+            </div>
+          </div>
+          <div class="buckets-grid" id="buckets-grid"></div>
+          <div class="group-buckets-panel">
+            <div class="group-buckets-title">Bucket: Group</div>
+            <div id="group-01-wrap">
+              <div class="group-bucket-item">
+                <strong>Group 01:</strong> From which Company the pdf is being
+                received
+              </div>
+            </div>
+            <div id="group-02-wrap">
+              <div class="group-bucket-item">
+                <strong>Group 02:</strong> To which company the pdf is being
+                given
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <div
+      class="modal-overlay"
+      id="modal-overlay"
+      onclick="if (event.target === this) closeModal();"
+    >
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title" id="modal-title">Document Viewer</div>
+          <div class="pill" id="modal-main-pill" style="font-size: 11px">—</div>
+          <span style="color: var(--text3); font-size: 13px; margin: 0 4px"
+            >›</span
+          >
+          <div
+            class="pill pill-sub"
+            id="modal-sub-pill"
+            style="font-size: 11px"
+          >
+            —
+          </div>
+          <button
+            class="modal-close"
+            onclick="closeModal()"
+            style="margin-left: auto"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="pdf-viewer">
+            <div
+              style="
+                font-size: 11px;
+                color: var(--text3);
+                margin-bottom: 12px;
+                font-family: var(--mono);
+              "
+              id="modal-filename"
+            >
+              —
+            </div>
+            <div class="viewer-switch">
+              <button
+                class="btn btn-ghost btn-sm"
+                onclick="showViewerPane('pdf')"
+              >
+                PDF</button
+              ><button
+                class="btn btn-ghost btn-sm"
+                onclick="showViewerPane('image')"
+              >
+                Image
+              </button>
+            </div>
+            <iframe
+              id="pdf-frame"
+              class="viewer-pane"
+              title="PDF viewer"
+            ></iframe
+            ><img
+              id="image-frame"
+              class="viewer-pane image-preview hidden"
+              alt="PDF preview image"
+            />
+            <div style="display: flex; gap: 8px; margin-top: 14px">
+              <span
+                style="
+                  font-size: 12px;
+                  color: var(--text3);
+                  display: flex;
+                  align-items: center;
+                  padding: 0 8px;
+                "
+                id="modal-pages"
+                >Real PDF preview</span
+              ><button
+                class="btn btn-ghost btn-sm"
+                style="margin-left: 8px"
+                id="modal-download-btn"
+              >
+                ⬇ Download
+              </button>
+            </div>
+          </div>
+          <div class="modal-info">
+            <div class="modal-info-title">Extracted Info</div>
+            <div id="modal-fields"></div>
+            <div class="correct-section">
+              <div class="correct-label">Correct Label</div>
+              <select
+                class="select"
+                id="modal-correction-select"
+                onchange="showNotif('Correction saved · Retraining queued')"
+              >
+                <option value="">— Mark correction —</option></select
+              ><button
+                class="btn btn-ghost btn-sm"
+                style="width: 100%"
+                onclick="showNotif('Correction logged for review')"
+              >
+                Log Correction
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="notif" id="notif">✓ <span id="notif-text"></span></div>
+    <script>
+      let APP_STATE = {
+        documents: [],
+        bucket_store: {},
+        summary: {
+          total_documents: 0,
+          processed_today: 0,
+          pending_ocr: 0,
+          model_accuracy: 0,
+          breakdown: {},
+        },
+      };
+      let currentBucket = "all";
+      let currentSub = null;
+      let currentResult = null;
+      let notifTimer = null;
+
+      const FALLBACK_TAXONOMY = {
+        main_buckets: ["Transactional Documents", "Certifications"],
+        sub_buckets: {
+          "Transactional Documents": [
+            "Invoice",
+            "Purchase Order",
+            "Proof of Payment",
+            "Production Records",
+            "Transportation Records",
+          ],
+          Certifications: [
+            "Social Audit Reports",
+            "Security Audit Records",
+            "Third party certification",
+          ],
+        },
+      };
+
+      let CLASSIFICATION_OPTIONS = [];
+      const TOKEN_METRICS_STORAGE_KEY = "adp_token_metrics_v1";
+
+      function getTodayKey() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, "0");
+        const d = String(now.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+
+      function loadTokenMetrics() {
+        try {
+          const raw = localStorage.getItem(TOKEN_METRICS_STORAGE_KEY);
+          if (!raw) return { day: getTodayKey(), today_docs: 0, today_tokens: 0 };
+          const parsed = JSON.parse(raw);
+          const day = String(parsed?.day || "");
+          const today = getTodayKey();
+          if (day !== today) {
+            return { day: today, today_docs: 0, today_tokens: 0 };
+          }
+          return {
+            day: today,
+            today_docs: Number(parsed?.today_docs || 0),
+            today_tokens: Number(parsed?.today_tokens || 0),
+          };
+        } catch (error) {
+          return { day: getTodayKey(), today_docs: 0, today_tokens: 0 };
+        }
+      }
+
+      function saveTokenMetrics(metrics) {
+        localStorage.setItem(
+          TOKEN_METRICS_STORAGE_KEY,
+          JSON.stringify({
+            day: metrics.day,
+            today_docs: Number(metrics.today_docs || 0),
+            today_tokens: Number(metrics.today_tokens || 0),
+          }),
+        );
+      }
+
+      function incrementTokenMetricsForResult(result) {
+        const totalTokens = Number(
+          result?.ai_identification?.token_usage?.total_tokens || 0,
+        );
+        if (!Number.isFinite(totalTokens) || totalTokens <= 0) return;
+        const metrics = loadTokenMetrics();
+        metrics.today_docs += 1;
+        metrics.today_tokens += totalTokens;
+        saveTokenMetrics(metrics);
+      }
+
+      function isTransactionalMain(label) {
+        const s = String(label || "").trim();
+        return (
+          s.includes("Transactional Documents") ||
+          (s.includes("Transactional") && !/^certific/i.test(s))
+        );
+      }
+
+      function buildClassificationOptionsFromTaxonomy(tax) {
+        const tx = tax.sub_buckets?.["Transactional Documents"];
+        const cert = tax.sub_buckets?.["Certifications"];
+        const pairs = [];
+        if (tx && Array.isArray(tx)) {
+          for (const sub of tx) {
+            pairs.push(`Transactional Documents / ${sub}`);
+          }
+        }
+        if (cert && Array.isArray(cert)) {
+          for (const sub of cert) {
+            pairs.push(`Certifications / ${sub}`);
+          }
+        }
+        return pairs;
+      }
+
+      async function loadTaxonomy() {
+        try {
+          const response = await fetch("/api/taxonomy");
+          if (!response.ok) throw new Error();
+          const tax = await response.json();
+          CLASSIFICATION_OPTIONS = buildClassificationOptionsFromTaxonomy(tax);
+        } catch {
+          CLASSIFICATION_OPTIONS =
+            buildClassificationOptionsFromTaxonomy(FALLBACK_TAXONOMY);
+        }
+        renderCorrectionOptions();
+      }
+
+      function bucketClassName(label) {
+        return isTransactionalMain(label) ? "pill-transact" : "pill-cert";
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "—")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function showView(id, el) {
+        document
+          .querySelectorAll(".view")
+          .forEach((v) => v.classList.remove("active"));
+        const view = document.getElementById("view-" + id);
+        view.classList.add("active");
+        view.classList.remove("fade-in");
+        void view.offsetWidth;
+        view.classList.add("fade-in");
+        document
+          .querySelectorAll(".sb-item")
+          .forEach((i) => i.classList.remove("active"));
+        if (el) el.classList.add("active");
+        const titles = {
+          dashboard: "Dashboard",
+          upload: "Upload Document",
+          documents: "Document Groups",
+        };
+        const crumbs = {
+          dashboard: "Overview",
+          upload: "New Upload",
+          documents: "Browse All",
+        };
+        document.getElementById("topbar-title").textContent = titles[id] || id;
+        document.getElementById("topbar-crumb").textContent = crumbs[id] || id;
+        if (id === "documents") renderDocs();
+        if (id === "dashboard") renderDashboard();
+        closeMobileSidebar();
+      }
+
+      function toggleMobileSidebar() {
+        document.body.classList.toggle("sidebar-open");
+      }
+
+      function closeMobileSidebar() {
+        document.body.classList.remove("sidebar-open");
+      }
+
+      async function fetchState() {
+        const response = await fetch("/api/state");
+        if (!response.ok) throw new Error("Failed to load state");
+        APP_STATE = await response.json();
+        renderSidebarBuckets();
+        renderFilterChips();
+        renderCorrectionOptions();
+        renderDashboard();
+        renderDocs();
+        renderCompanyGroups();
+      }
+
+      async function checkGeminiConnection() {
+        try {
+          const response = await fetch("/api/gemini-health");
+          const payload = await response.json();
+          if (!response.ok || !payload.connected) {
+            console.error("[Gemini Health] Not connected:", payload);
+            showNotif(payload.message || "Gemini connection failed.");
+            return false;
+          }
+          console.log("[Gemini Health] Connected");
+          console.log("[Gemini Health] Response:", payload.response);
+          if (payload.response?.raw_response_text) {
+            console.log("[Gemini Health] Raw response text:");
+            console.log(payload.response.raw_response_text);
+          }
+          return true;
+        } catch (error) {
+          console.error("[Gemini Health] Error:", error);
+          showNotif("Could not verify Gemini connection.");
+          return false;
+        }
+      }
+
+      function renderSidebarBuckets() {
+        document.getElementById("sidebar-total-count").textContent =
+          APP_STATE.documents.length;
+        const container = document.getElementById("sidebar-buckets");
+        container.innerHTML = Object.entries(APP_STATE.bucket_store)
+          .map(([mainBucket, subBuckets], index) => {
+            const bucketId = `bucket-${index}`;
+            const bucketTotal = Object.values(subBuckets).reduce(
+              (sum, docs) => sum + docs.length,
+              0,
+            );
+            return `
+      <div class="sb-bucket-header" onclick="toggleSbGroup('${bucketId}')">
+        <div class="sb-bucket-dot" style="background:${isTransactionalMain(mainBucket) ? "#378ADD" : "#1D9E75"}"></div>
+        ${escapeHtml(mainBucket)}
+        <span class="sb-badge">${bucketTotal}</span>
+        <span class="sb-chevron open" id="sb-chevron-${bucketId}">›</span>
+      </div>
+      <div id="sb-${bucketId}">
+        ${Object.entries(subBuckets)
+          .map(
+            ([subBucket, docs]) => `
+          <div class="sb-item" onclick="showView('documents',this);filterBucket('${encodeURIComponent(mainBucket)}');filterSub('${encodeURIComponent(subBucket)}')">
+            <span class="sb-icon" style="font-size:11px">↳</span> ${escapeHtml(subBucket)} <span class="sb-badge">${docs.length}</span>
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+    `;
+          })
+          .join("");
+      }
+
+      function renderFilterChips() {
+        const chips = [
+          `<div class="filter-chip active" id="chip-all" onclick="filterBucket('all')">All (${APP_STATE.documents.length})</div>`,
+        ];
+        Object.entries(APP_STATE.bucket_store).forEach(
+          ([mainBucket, subBuckets]) => {
+            const total = Object.values(subBuckets).reduce(
+              (sum, docs) => sum + docs.length,
+              0,
+            );
+            chips.push(
+              `<div class="filter-chip" id="chip-${mainBucket}" onclick="filterBucket('${encodeURIComponent(mainBucket)}')">${escapeHtml(mainBucket)} (${total})</div>`,
+            );
+          },
+        );
+        document.getElementById("filter-chips").innerHTML = chips.join("");
+      }
+
+      function renderCorrectionOptions() {
+        const options = [`<option value="">— Select —</option>`].concat(
+          CLASSIFICATION_OPTIONS.map(
+            (option) => `<option>${escapeHtml(option)}</option>`,
+          ),
+        );
+        document.getElementById("correction-select").innerHTML =
+          options.join("");
+        document.getElementById("modal-correction-select").innerHTML =
+          `<option value="">— Mark correction —</option>` +
+          options.slice(1).join("");
+      }
+
+      function renderDashboard() {
+        const summary = APP_STATE.summary;
+        const metrics = loadTokenMetrics();
+        const todayAvgFromLocal =
+          metrics.today_docs > 0 ? metrics.today_tokens / metrics.today_docs : 0;
+        const globalAvgFromLocal =
+          summary.total_documents > 0
+            ? metrics.today_tokens / summary.total_documents
+            : 0;
+        document.getElementById("stat-total-docs").textContent =
+          summary.total_documents;
+        document.getElementById("stat-processed-today").textContent =
+          Number(todayAvgFromLocal).toFixed(1);
+        document.getElementById("stat-pending-ocr").textContent =
+          Number(globalAvgFromLocal).toFixed(1);
+        document.getElementById("stat-model-accuracy").textContent =
+          `${summary.model_accuracy}%`;
+
+        const tbody = document.getElementById("recent-table");
+        const recent = APP_STATE.documents.slice(0, 8);
+        tbody.innerHTML = recent
+          .map(
+            (d) => `
+    <tr onclick="openDocModal('${encodeURIComponent(d.file_name)}')" style="cursor:pointer;">
+      <td><div class="doc-name"><span class="doc-icon">📄</span>${escapeHtml(d.file_name)}</div></td>
+      <td><span class="pill ${bucketClassName(d.main_bucket.label)}">${escapeHtml(d.main_bucket.label)}</span></td>
+      <td><span class="pill pill-sub">${escapeHtml(d.sub_bucket.label)}</span></td>
+      <td><span class="mono">${escapeHtml(d.entities.date || "—")}</span></td>
+      <td>${escapeHtml(d.entities.from_company || d.entities.to_company || "—")}</td>
+      <td><span class="status-dot s-done"></span> Ready</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openDocModal('${encodeURIComponent(d.file_name)}')">View</button></td>
+    </tr>
+  `,
+          )
+          .join("");
+
+        const breakdownEntries = Object.entries(summary.breakdown);
+        const transEntry = breakdownEntries.find(([bucketName]) =>
+          isTransactionalMain(bucketName),
+        );
+        const certEntry = breakdownEntries.find(
+          ([bucketName]) => !!bucketName && !isTransactionalMain(bucketName),
+        );
+        document.getElementById("transact-breakdown").innerHTML =
+          renderBreakdownList(transEntry);
+        document.getElementById("cert-breakdown").innerHTML =
+          renderBreakdownList(certEntry);
+        document.getElementById("breakdown-title-left").textContent =
+          transEntry?.[0]
+            ? `${transEntry[0]} sub-buckets`
+            : `${FALLBACK_TAXONOMY.main_buckets[0]} · sub-buckets`;
+        document.getElementById("breakdown-title-right").textContent =
+          certEntry?.[0]
+            ? `${certEntry[0]} sub-buckets`
+            : `${FALLBACK_TAXONOMY.main_buckets[1]} · sub-buckets`;
+      }
+
+      function renderBreakdownList(entry) {
+        if (!entry)
+          return `<div style="font-size:12px;color:var(--text3);">No processed documents yet</div>`;
+        const [bucketName, subBuckets] = entry;
+        const total =
+          Object.values(subBuckets).reduce((sum, count) => sum + count, 0) || 1;
+        const color = isTransactionalMain(bucketName) ? "#378ADD" : "#1D9E75";
+        return Object.entries(subBuckets)
+          .map(([name, count]) => {
+            const pct = Math.round((count / total) * 100);
+            return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <div style="font-size:12px;width:140px;color:var(--text2);">${escapeHtml(name)}</div>
+      <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;"></div>
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);width:28px;text-align:right;">${count}</div>
+      <button class="btn btn-ghost btn-sm" style="padding:3px 8px;" onclick="openBucketFolder('${encodeURIComponent(bucketName)}','${encodeURIComponent(name)}')">Open Folder</button>
+    </div>`;
+          })
+          .join("");
+      }
+
+      function openBucketFolder(mainBucket, subBucket) {
+        const url = `/bucket-files?main_bucket=${mainBucket}&sub_bucket=${subBucket}`;
+        window.open(url, "_blank");
+      }
+
+      function resetProcessingPanel(file) {
+        document.getElementById("proc-wrap").style.display = "block";
+        document.getElementById("result-wrap").style.display = "none";
+        document.getElementById("proc-file-name").textContent =
+          file.name || "document.pdf";
+        document.getElementById("proc-file-size").textContent =
+          `${((file.size || 0) / 1024 / 1024).toFixed(1)} MB · PDF`;
+        [
+          [
+            "step-extract-icon",
+            "step-extract-detail",
+            "Checking native text with PyMuPDF…",
+          ],
+          [
+            "step-classify-icon",
+            "step-classify-detail",
+            "Waiting for classification…",
+          ],
+          [
+            "step-extract2-icon",
+            "step-extract2-detail",
+            "Waiting for entity extraction…",
+          ],
+        ].forEach(([iconId, detailId, detailText]) => {
+          document.getElementById(iconId).className = "proc-step-icon wait";
+          document.getElementById(detailId).textContent = detailText;
+        });
+        ["step-extract-bar", "step-classify-bar", "step-extract2-bar"].forEach(
+          (id) => (document.getElementById(id).style.width = "0"),
+        );
+      }
+
+      function markStepRunning(iconId, detailId, barId, detailText) {
+        document.getElementById(iconId).className = "proc-step-icon running";
+        document.getElementById(detailId).textContent = detailText;
+        document.getElementById(barId).style.width = "55%";
+      }
+
+      function markStepDone(iconId, detailId, barId, detailText) {
+        document.getElementById(iconId).className = "proc-step-icon done";
+        document.getElementById(iconId).textContent = "✓";
+        document.getElementById(detailId).textContent = detailText;
+        document.getElementById(barId).style.width = "100%";
+      }
+
+      async function handleFile(file) {
+        if (!file) return;
+        resetProcessingPanel(file);
+        markStepRunning(
+          "step-extract-icon",
+          "step-extract-detail",
+          "step-extract-bar",
+          "Attempting native text extraction with PyMuPDF…",
+        );
+        const formData = new FormData();
+        formData.append("pdf_file", file);
+        const timerStart = Date.now();
+        const timerEl = document.getElementById("proc-timer");
+        const timerInterval = setInterval(() => {
+          timerEl.textContent = `${((Date.now() - timerStart) / 1000).toFixed(1)}s`;
+        }, 100);
+
+        try {
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+          const contentType = response.headers.get("content-type") || "";
+          if (!contentType.includes("application/json")) {
+            const body = await response.text();
+            throw new Error(
+              `Upload endpoint returned non-JSON response (${response.status}). ${body.slice(0, 120)}`,
+            );
+          }
+          const payload = await response.json();
+          if (!response.ok && response.status !== 202)
+            throw new Error(payload.message || "Upload failed");
+
+          if (payload.status === "processing") {
+            const fallbackMsg =
+              payload.preprocess?.avg_chars_per_page != null
+                ? `PyMuPDF found ${payload.preprocess.avg_chars_per_page} chars/page. Switching to EasyOCR…`
+                : "Native text looked low quality. Switching to EasyOCR…";
+            document.getElementById("step-extract-detail").textContent =
+              fallbackMsg;
+            document.getElementById("step-extract-bar").style.width = "100%";
+            markStepRunning(
+              "step-classify-icon",
+              "step-classify-detail",
+              "step-classify-bar",
+              "Waiting for OCR output before classification…",
+            );
+            showNotif(payload.message || "EasyOCR running in background");
+            const pollPath =
+              payload.poll_url ||
+              (payload.doc_id ? `/documents/${payload.doc_id}/status` : "");
+            if (!pollPath) {
+              throw new Error(
+                "Processing started but no poll_url/doc_id returned by server.",
+              );
+            }
+            pollJob(pollPath, timerInterval);
+            return;
+          }
+
+          clearInterval(timerInterval);
+          applyCompletedResult(payload.result);
+        } catch (error) {
+          console.error("[Gemini/API Error] Upload flow exception:", error);
+          clearInterval(timerInterval);
+          showNotif(error.message || "Upload failed");
+        }
+      }
+
+      async function pollJob(pollUrl, timerInterval) {
+        const response = await fetch(pollUrl);
+        const contentType = response.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) {
+          const body = await response.text();
+          clearInterval(timerInterval);
+          showNotif(
+            `Polling failed: non-JSON response (${response.status}) ${body.slice(0, 80)}`,
+          );
+          return;
+        }
+        const payload = await response.json();
+        if (payload.status === "processing") {
+          if (payload.preprocess) {
+            document.getElementById("step-classify-detail").textContent =
+              `OCR in progress… ${payload.preprocess.page_count || "?"} pages`;
+          } else {
+            document.getElementById("step-classify-detail").textContent =
+              "OCR in progress…";
+          }
+          setTimeout(() => pollJob(pollUrl, timerInterval), 1500);
+          return;
+        }
+        clearInterval(timerInterval);
+        if (payload.status === "failed" || payload.status === "ocr_failed") {
+          console.error("[Gemini/API Error] Job failed payload:", payload);
+          showNotif(payload.error || payload.message || "OCR job failed");
+          return;
+        }
+        if (!payload.result) {
+          showNotif("Processing finished but result payload is missing.");
+          return;
+        }
+        applyCompletedResult(payload.result);
+      }
+
+      function applyCompletedResult(result) {
+        currentResult = result;
+        incrementTokenMetricsForResult(result);
+        const tokenUsage = result?.ai_identification?.token_usage || {};
+        console.log(
+          "[Gemini Token Usage]",
+          result?.file_name || "unknown-file",
+          tokenUsage,
+        );
+        logExtractionToConsole(result);
+        markStepDone(
+          "step-extract-icon",
+          "step-extract-detail",
+          "step-extract-bar",
+          result.preprocess.ocr_used
+            ? "OCR text extraction completed."
+            : "Native text extraction completed.",
+        );
+        markStepDone(
+          "step-classify-icon",
+          "step-classify-detail",
+          "step-classify-bar",
+          `${result.main_bucket.label} → ${result.sub_bucket.label}`,
+        );
+        markStepDone(
+          "step-extract2-icon",
+          "step-extract2-detail",
+          "step-extract2-bar",
+          "Key info extracted and stored.",
+        );
+        showResult(result);
+        showNotif(
+          `Review correction and click save to store in category folder`,
+        );
+      }
+
+      function logExtractionToConsole(result) {
+        const extractor =
+          result?.preprocess?.extractor ||
+          (result?.preprocess?.ocr_used ? "easyocr" : "pymupdf");
+        const extractedText = result?.preprocess?.text || "";
+        const sourceLanguage = result?.preprocess?.source_language || "unknown";
+        const translated = Boolean(result?.preprocess?.translated_to_english);
+        console.log("=== Document Extraction Output ===");
+        console.log("File:", result?.file_name || "unknown");
+        console.log("Extractor:", extractor);
+        console.log("OCR used:", Boolean(result?.preprocess?.ocr_used));
+        console.log("Source language:", sourceLanguage);
+        console.log("Translated to English:", translated);
+        console.log("Extracted text preview:");
+        console.log(extractedText.slice(0, 5000));
+        const ai = result?.ai_identification || {};
+        console.log("Gemini operation:", ai.operation || "off");
+        console.log("AI model/source:", ai.model || "—");
+        if (ai.gemini_response_preview) {
+          console.log("Gemini response preview:");
+          console.log(String(ai.gemini_response_preview));
+        }
+        console.log("=================================");
+      }
+
+      function buildTranslationBadge(preprocess, forHtml = false) {
+        const translated = Boolean(preprocess?.translated_to_english);
+        const src = String(preprocess?.source_language || "unknown");
+        if (!translated) return "";
+        const text = `Translated from ${src}`;
+        if (!forHtml) return text;
+        return `<span style="display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#E8F2FF;color:#1B5FA8;font-size:11px;font-weight:600;">${escapeHtml(text)}</span>`;
+      }
+
+      function formatAiSource(result) {
+        const model = String(result?.ai_identification?.model || "").trim();
+        if (!model) return "—";
+        if (model.startsWith("gemini:")) {
+          const mode = model.split(":")[1] || "text";
+          return `Gemini (${mode})`;
+        }
+        if (model === "local_classifier_pipeline_fallback") {
+          return "Local fallback";
+        }
+        if (model === "local_classifier_pipeline") {
+          return "Local model";
+        }
+        return model;
+      }
+
+      function isGeminiUsed(result) {
+        const model = String(result?.ai_identification?.model || "").trim();
+        return model.startsWith("gemini:");
+      }
+
+      function geminiOperationStatus(result) {
+        const op = String(result?.ai_identification?.operation || "off")
+          .trim()
+          .toLowerCase();
+        return op === "on" ? "On" : "Off";
+      }
+
+      function showResult(result) {
+        console.log("[AI Response] Full result object:", result);
+        if (result?.ai_identification) {
+          console.log(
+            "[AI Response] ai_identification:",
+            result.ai_identification,
+          );
+        }
+        if (result?.ai_identification?.gemini_response_preview) {
+          console.log(
+            "[AI Response] Gemini response preview:",
+            result.ai_identification.gemini_response_preview,
+          );
+        }
+        document.getElementById("result-wrap").style.display = "block";
+        const mainPill = document.getElementById("result-main-pill");
+        mainPill.className = `pill ${bucketClassName(result.main_bucket.label)}`;
+        mainPill.textContent = result.main_bucket.label;
+        document.getElementById("result-sub-pill").textContent =
+          result.sub_bucket.label;
+        document.getElementById("result-conf").textContent =
+          `${(result.main_bucket.confidence * 100).toFixed(1)}%`;
+        document.getElementById("classified-group-btn").textContent =
+          `Save to ${result.main_bucket.label} / ${result.sub_bucket.label}`;
+        document.getElementById("correction-select").value = "";
+        document.getElementById("result-info-grid").innerHTML = `
+      <div class="info-field">
+        <div class="info-field-label">Doc ID</div>
+        <input class="select" id="manual-document_id" value="${escapeHtml(result.entities.document_id || "")}" oninput="syncAiIdentifyActions(currentResult)" />
+      </div>
+      <div class="info-field">
+        <div class="info-field-label">Date</div>
+        <input class="select" id="manual-date" value="${escapeHtml(result.entities.date || "")}" oninput="syncAiIdentifyActions(currentResult)" />
+      </div>
+      <div class="info-field">
+        <div class="info-field-label">Pdf is being received from</div>
+        <input class="select" id="manual-from_company" value="${escapeHtml(result.entities.from_company || "")}" oninput="syncAiIdentifyActions(currentResult)" />
+      </div>
+      <div class="info-field">
+        <div class="info-field-label">Pdf is being given to</div>
+        <input class="select" id="manual-to_company" value="${escapeHtml(result.entities.to_company || "")}" oninput="syncAiIdentifyActions(currentResult)" />
+      </div>
+      <div class="info-field">
+        <div class="info-field-label">Quantity</div>
+        <input class="select" id="manual-quantity" value="${escapeHtml(result.entities.quantity || "")}" oninput="syncAiIdentifyActions(currentResult)" />
+      </div>
+      <div class="info-field">
+        <div class="info-field-label">Product/Material Name</div>
+        <input class="select" id="manual-product_material_name" value="${escapeHtml(result.entities.product_material_name || "")}" oninput="syncAiIdentifyActions(currentResult)" />
+      </div>
+      <div class="info-field confidence-full">
+        <div class="info-field-label">Confidence</div>
+        <div class="info-field-value">${(Number(result?.main_bucket?.confidence || 0) * 100).toFixed(1)}%</div>
+      </div>
+      <div class="info-field confidence-full">
+        <div class="info-field-label">Total Token Usage</div>
+        <div class="info-field-value">${escapeHtml(String(result?.ai_identification?.token_usage?.total_tokens ?? 0))}</div>
+      </div>
+    `;
+        syncAiIdentifyActions(result);
+      }
+
+      function onCorrectionSelectionChange() {
+        const selectedCorrection = (
+          document.getElementById("correction-select")?.value || ""
+        ).trim();
+        updateSaveButtonLabel(selectedCorrection);
+        syncAiIdentifyActions(currentResult);
+        if (selectedCorrection) {
+          showNotif("Correction selected. Save will use corrected category.");
+        }
+      }
+
+      function getManualEntities() {
+        return {
+          document_id: (
+            document.getElementById("manual-document_id")?.value || ""
+          ).trim(),
+          date: (document.getElementById("manual-date")?.value || "").trim(),
+          from_company: (
+            document.getElementById("manual-from_company")?.value || ""
+          ).trim(),
+          to_company: (
+            document.getElementById("manual-to_company")?.value || ""
+          ).trim(),
+          quantity: (
+            document.getElementById("manual-quantity")?.value || ""
+          ).trim(),
+          product_material_name: (
+            document.getElementById("manual-product_material_name")?.value || ""
+          ).trim(),
+        };
+      }
+
+      function hasMissingKeyInfo() {
+        const entities = getManualEntities();
+        return [
+          entities.document_id,
+          entities.date,
+          entities.from_company,
+          entities.to_company,
+          entities.quantity,
+          entities.product_material_name,
+        ].some((value) => !String(value || "").trim());
+      }
+
+      function updateSaveButtonLabel(selectedCorrection = "") {
+        const saveBtn = document.getElementById("classified-group-btn");
+        if (!saveBtn || !currentResult) return;
+        const effectiveLabel =
+          selectedCorrection ||
+          `${currentResult.main_bucket.label} / ${currentResult.sub_bucket.label}`;
+        saveBtn.textContent = `Save to ${effectiveLabel}`;
+      }
+
+      async function saveToGroup() {
+        if (!currentResult) return;
+        const correction = (
+          document.getElementById("correction-select")?.value || ""
+        ).trim();
+        const manualEntities = getManualEntities();
+        if (hasMissingKeyInfo() && !correction) {
+          showNotif("Need Manual Checking");
+          return;
+        }
+
+        const response = await fetch("/api/finalize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            result: currentResult,
+            correction: correction,
+            manual_entities: manualEntities,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok || payload.status !== "ok") {
+          showNotif(payload.message || "Could not finalize document.");
+          return;
+        }
+        currentResult = payload.result;
+        updateSaveButtonLabel("");
+        await fetchState();
+        filterBucket(encodeURIComponent(currentResult.main_bucket.label));
+        filterSub(encodeURIComponent(currentResult.sub_bucket.label));
+        showView("documents", null);
+        showNotif(
+          `Saved in ${currentResult.main_bucket.label} / ${currentResult.sub_bucket.label}`,
+        );
+      }
+
+      function syncAiIdentifyActions(result) {
+        const saveBtn = document.getElementById("classified-group-btn");
+        const aiBtn = document.getElementById("ai-identify-btn");
+        const reviewBtn = document.getElementById("need-review-btn");
+        const needs = Boolean(result?.needs_ai_identification);
+        const identified = Boolean(result?.ai_identified);
+        const correction = (
+          document.getElementById("correction-select")?.value || ""
+        ).trim();
+        const requiresManualCheck = hasMissingKeyInfo();
+        const lockSave = requiresManualCheck && !correction;
+        saveBtn.disabled = lockSave;
+        if (lockSave) {
+          saveBtn.title = "Need Manual Checking";
+          if (saveBtn.dataset.manualWarned !== "1") {
+            showNotif("Need Manual Checking");
+            saveBtn.dataset.manualWarned = "1";
+          }
+        } else {
+          saveBtn.title = "";
+          saveBtn.dataset.manualWarned = "0";
+        }
+
+        if (requiresManualCheck) {
+          reviewBtn.style.display = "inline-flex";
+        } else {
+          reviewBtn.style.display = "none";
+        }
+
+        if (needs && !identified) {
+          aiBtn.style.display = "inline-flex";
+        } else {
+          aiBtn.style.display = "none";
+        }
+      }
+
+      function markNeedReview() {
+        if (!currentResult) return;
+        currentResult.needs_review = true;
+        showNotif("Marked as Need to Review.");
+      }
+
+      async function runAiIdentification() {
+        if (!currentResult) return;
+        const aiBtn = document.getElementById("ai-identify-btn");
+        aiBtn.disabled = true;
+        aiBtn.textContent = "Identifying…";
+        try {
+          const response = await fetch("/api/ai-identify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ result: currentResult }),
+          });
+          const payload = await response.json();
+          if (!response.ok || payload.status !== "ok") {
+            throw new Error(payload.message || "AI identification failed.");
+          }
+          currentResult = payload.result;
+          showResult(currentResult);
+          showNotif("AI model identification completed.");
+        } catch (error) {
+          showNotif(error.message || "AI identification failed.");
+        } finally {
+          aiBtn.disabled = false;
+          aiBtn.textContent = "Use AI Model";
+          syncAiIdentifyActions(currentResult);
+        }
+      }
+
+      function filterBucket(bucketValue) {
+        currentBucket =
+          bucketValue === "all" ? "all" : decodeURIComponent(bucketValue);
+        currentSub = null;
+        document
+          .querySelectorAll(".filter-chip")
+          .forEach((c) => c.classList.remove("active"));
+        const chip = document.getElementById(
+          bucketValue === "all" ? "chip-all" : `chip-${currentBucket}`,
+        );
+        if (chip) chip.classList.add("active");
+        renderDocs();
+      }
+
+      function filterSub(subValue) {
+        currentSub = decodeURIComponent(subValue);
+        renderDocs();
+      }
+
+      function renderDocs() {
+        const query = (
+          document.getElementById("search-input").value || ""
+        ).toLowerCase();
+        const grid = document.getElementById("buckets-grid");
+        const bucketEntries = Object.entries(APP_STATE.bucket_store).filter(
+          ([bucketName]) =>
+            currentBucket === "all" || bucketName === currentBucket,
+        );
+        grid.innerHTML =
+          bucketEntries
+            .map(([bucketName, subBuckets]) => {
+              const visibleSubBuckets = Object.entries(subBuckets).filter(
+                ([subName, docs]) => {
+                  if (currentSub && subName !== currentSub) return false;
+                  if (!query) return true;
+                  return docs.some((doc) =>
+                    [
+                      doc.file_name,
+                      doc.entities.from_company,
+                      doc.entities.to_company,
+                      doc.entities.product_material_name,
+                    ]
+                      .join(" ")
+                      .toLowerCase()
+                      .includes(query),
+                  );
+                },
+              );
+              const bucketCount = visibleSubBuckets.reduce(
+                (sum, [, docs]) => sum + docs.length,
+                0,
+              );
+              return `
+      <div class="bucket-col fade-in">
+        <div class="bucket-col-header">
+          <div class="sb-bucket-dot" style="background:${isTransactionalMain(bucketName) ? "#378ADD" : "#1D9E75"}"></div>
+          <div class="bucket-col-title" style="color:${isTransactionalMain(bucketName) ? "#1B5FA8" : "#2E7D52"}">${escapeHtml(bucketName)}</div>
+          <span class="bucket-col-count" style="background:${isTransactionalMain(bucketName) ? "#EBF3FC" : "#EAF5EF"};color:${isTransactionalMain(bucketName) ? "#1B5FA8" : "#2E7D52"}">${bucketCount}</span>
+        </div>
+        <div class="bucket-col-body">
+          ${
+            visibleSubBuckets
+              .map(
+                ([subName, docs]) => `
+            <div class="sub-group">
+              <div class="sub-group-header">
+                <div class="sub-group-name"><div class="sb-bucket-dot" style="background:${isTransactionalMain(bucketName) ? "#7BB8EC" : "#6DC4A0"};"></div>${escapeHtml(subName)}</div>
+                <span class="sub-group-cnt">${docs.length} docs</span>
+              </div>
+              ${
+                docs
+                  .map(
+                    (doc) => `
+                <div class="doc-tile" onclick="openDocModal('${encodeURIComponent(doc.file_name)}')">
+                  <div class="doc-tile-icon">📄</div>
+                  <div class="doc-tile-body">
+                    <div class="doc-tile-name">${escapeHtml(doc.file_name)}</div>
+                    <div class="doc-tile-meta">
+                      <span>${escapeHtml(doc.entities.document_id || "—")}</span>
+                      <span>${escapeHtml(doc.entities.date || "—")}</span>
+                      <span>${doc.preprocess.ocr_used ? "OCR" : "Native text"}</span>
+                      <span class="status-dot s-done"></span>
+                    </div>
+                  </div>
+                  <div class="doc-tile-actions">
+                    <button class="tile-btn" onclick="event.stopPropagation();openDocModal('${encodeURIComponent(doc.file_name)}')">View</button>
+                  </div>
+                </div>
+              `,
+                  )
+                  .join("") ||
+                `<div style="font-size:12px;color:var(--text3);padding:8px 8px;">No documents yet</div>`
+              }
+            </div>
+          `,
+              )
+              .join("") ||
+            `<div class="empty-state"><div class="empty-title">No matching documents</div></div>`
+          }
+        </div>
+      </div>
+    `;
+            })
+            .join("") ||
+          `<div class="empty-state"><div class="empty-title">No documents uploaded yet</div></div>`;
+      }
+
+      function renderCompanyGroups() {
+        const groups = APP_STATE.company_groups || {};
+        const fromGroups = groups.group_01_from_company || {};
+        const toGroups = groups.group_02_to_company || {};
+
+        const group01Wrap = document.getElementById("group-01-wrap");
+        const group02Wrap = document.getElementById("group-02-wrap");
+
+        group01Wrap.innerHTML =
+          `<div class="group-bucket-item"><strong>Group 01:</strong> From which Company the pdf is being received</div>` +
+          Object.entries(fromGroups)
+            .map(
+              ([company, docs]) => `
+                <div class="group-bucket-item">
+                  ${escapeHtml(company)} <span class="mono">(${docs.length})</span>
+                  <ul class="group-pdf-list">
+                    ${docs
+                      .map(
+                        (doc) =>
+                          `<li><span class="group-pdf-link" onclick="openDocModal('${encodeURIComponent(doc.file_name)}')">${escapeHtml(doc.file_name)}</span></li>`,
+                      )
+                      .join("")}
+                  </ul>
+                </div>
+              `,
+            )
+            .join("");
+
+        group02Wrap.innerHTML =
+          `<div class="group-bucket-item"><strong>Group 02:</strong> To which company the pdf is being given</div>` +
+          Object.entries(toGroups)
+            .map(
+              ([company, docs]) => `
+                <div class="group-bucket-item">
+                  ${escapeHtml(company)} <span class="mono">(${docs.length})</span>
+                  <ul class="group-pdf-list">
+                    ${docs
+                      .map(
+                        (doc) =>
+                          `<li><span class="group-pdf-link" onclick="openDocModal('${encodeURIComponent(doc.file_name)}')">${escapeHtml(doc.file_name)}</span></li>`,
+                      )
+                      .join("")}
+                  </ul>
+                </div>
+              `,
+            )
+            .join("");
+      }
+
+      function findDoc(fileName) {
+        const decoded = decodeURIComponent(fileName);
+        return (
+          APP_STATE.documents.find((doc) => doc.file_name === decoded) ||
+          (currentResult && currentResult.file_name === decoded
+            ? currentResult
+            : null)
+        );
+      }
+
+      function openDocModal(fileName) {
+        const doc = findDoc(fileName);
+        if (!doc) return;
+        const fileUrl =
+          doc.file_url || `/uploads/${encodeURIComponent(doc.file_name)}`;
+        const previewUrl =
+          doc.preview_url ||
+          `/uploads/${encodeURIComponent(doc.file_name)}/preview.png`;
+        document.getElementById("modal-title").textContent = doc.file_name;
+        document.getElementById("modal-filename").textContent =
+          `${doc.entities?.document_id || doc.file_name} · ${doc.preprocess?.page_count || "?"} pages`;
+        document.getElementById("modal-pages").textContent = doc.preprocess
+          ?.ocr_used
+          ? "OCR-derived text"
+          : "Native text PDF";
+        const mainPill = document.getElementById("modal-main-pill");
+        mainPill.className = `pill ${bucketClassName(doc.main_bucket.label)}`;
+        mainPill.textContent = doc.main_bucket.label;
+        document.getElementById("modal-sub-pill").textContent =
+          doc.sub_bucket.label;
+        document.getElementById("pdf-frame").src = fileUrl;
+        document.getElementById("image-frame").src = previewUrl;
+        document.getElementById("modal-download-btn").onclick = () =>
+          window.open(fileUrl, "_blank");
+        showViewerPane("pdf");
+        const fields = [
+          ["Document ID", doc.entities.document_id || "—", true],
+          ["Date", doc.entities.date || "—", false],
+          [
+            "Company name: 1. From which Company the pdf is being received",
+            doc.entities.from_company || "—",
+            false,
+          ],
+          [
+            "Company name: 2. To which company the pdf is being given",
+            doc.entities.to_company || "—",
+            false,
+          ],
+          ["Quantity", doc.entities.quantity || "—", false],
+          [
+            "Product/Material Name",
+            doc.entities.product_material_name || "—",
+            false,
+          ],
+          [
+            "Confidence",
+            `${(Number(doc?.main_bucket?.confidence || 0) * 100).toFixed(1)}%`,
+            false,
+          ],
+          ["Gemini Operation", geminiOperationStatus(doc), false],
+          ["Gemini Used", isGeminiUsed(doc) ? "Yes" : "No", false],
+          ["AI Identification Source", formatAiSource(doc), false],
+        ];
+        document.getElementById("modal-fields").innerHTML = fields
+          .map(
+            ([label, value, mono, isHtml]) => `
+    <div class="modal-field">
+      <div class="modal-field-label">${escapeHtml(label)}</div>
+      <div class="modal-field-value ${mono ? "mono" : ""}">${isHtml ? value || "—" : escapeHtml(value)}</div>
+    </div>
+  `,
+          )
+          .join("");
+        document.getElementById("modal-overlay").classList.add("open");
+      }
+
+      function showModal(id) {
+        if (id === "result-doc" && currentResult)
+          openDocModal(encodeURIComponent(currentResult.file_name));
+      }
+
+      function showViewerPane(mode) {
+        const pdfFrame = document.getElementById("pdf-frame");
+        const imageFrame = document.getElementById("image-frame");
+        if (mode === "image") {
+          pdfFrame.classList.add("hidden");
+          imageFrame.classList.remove("hidden");
+          document.getElementById("modal-pages").textContent =
+            "Rendered first-page image";
+          return;
+        }
+        imageFrame.classList.add("hidden");
+        pdfFrame.classList.remove("hidden");
+        document.getElementById("modal-pages").textContent = "Real PDF preview";
+      }
+
+      function closeModal() {
+        document.getElementById("modal-overlay").classList.remove("open");
+        document.getElementById("pdf-frame").src = "";
+        document.getElementById("image-frame").src = "";
+      }
+
+      function toggleSbGroup(id) {
+        const el = document.getElementById("sb-" + id);
+        const chevron = document.getElementById("sb-chevron-" + id);
+        if (el.style.display === "none") {
+          el.style.display = "";
+          chevron.classList.add("open");
+        } else {
+          el.style.display = "none";
+          chevron.classList.remove("open");
+        }
+      }
+
+      function handleDrop(event) {
+        event.preventDefault();
+        document.getElementById("drop-zone").classList.remove("drag");
+        const file = event.dataTransfer.files[0];
+        if (file && file.type === "application/pdf") handleFile(file);
+        else showNotif("Please upload a PDF file");
+      }
+
+      function showNotif(message) {
+        const notif = document.getElementById("notif");
+        const msg = String(message || "");
+        const isError = /error|failed|invalid|could not|not found|reject/i.test(
+          msg,
+        );
+        if (isError) {
+          console.error("[ADP Notification]", msg);
+        } else {
+          console.info("[ADP Notification]", msg);
+        }
+        document.getElementById("notif-text").textContent = msg;
+        notif.classList.add("show");
+        clearTimeout(notifTimer);
+        notifTimer = setTimeout(() => notif.classList.remove("show"), 3200);
+      }
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeModal();
+      });
+
+      (async () => {
+        await loadTaxonomy();
+        await fetchState();
+      })().catch(() => showNotif("Could not load live document state"));
+    </script>
+  </body>
+</html>

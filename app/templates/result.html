@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="result-layout">
+    <section class="result-header card">
+        <span class="kicker">Pipeline Completed</span>
+        <h1>Classification Result for {{ result.file_name }}</h1>
+        <p class="muted">Each stage output is shown below with confidence and extracted metadata.</p>
+    </section>
+
+    <section class="result-grid">
+        <article class="card stage peach">
+            <h3>Pre-processing Layer</h3>
+            <p><strong>OCR Used:</strong> {{ result.preprocess.ocr_used }}</p>
+            <p><strong>OCR Language Capacity:</strong> {{ result.preprocess.supported_ocr_languages }}</p>
+        </article>
+
+        <article class="card stage violet">
+            <h3>Main Bucket Classifier</h3>
+            <p><strong>Label:</strong> {{ result.main_bucket.label }}</p>
+            <p><strong>Confidence:</strong> {{ "%.2f"|format(result.main_bucket.confidence * 100) }}%</p>
+        </article>
+
+        <article class="card stage violet">
+            <h3>Sub-Bucket Classifier</h3>
+            <p><strong>Label:</strong> {{ result.sub_bucket.label }}</p>
+            <p><strong>Confidence:</strong> {{ "%.2f"|format(result.sub_bucket.confidence * 100) }}%</p>
+        </article>
+
+        <article class="card stage blue">
+            <h3>Key Info Extractor</h3>
+            <p><strong>Date:</strong> {{ result.entities.date or "-" }}</p>
+            <p><strong>Document ID:</strong> {{ result.entities.document_id or "-" }}</p>
+            <p><strong>Company:</strong> {{ result.entities.company or "-" }}</p>
+            <p><strong>Product:</strong> {{ result.entities.product or "-" }}</p>
+        </article>
+
+        <article class="card stage green">
+            <h3>Storage & Grouping</h3>
+            <p><strong>Group Members (same company):</strong></p>
+            <ul>
+                {% for doc in result.grouped_docs %}
+                    <li>{{ doc }}</li>
+                {% endfor %}
+            </ul>
+        </article>
+    </section>
+
+    <section class="card">
+        <h3>Extracted Raw Text (Preview)</h3>
+        <pre class="text-preview">{{ result.preprocess.text }}</pre>
+        <a href="{{ url_for('main.home') }}" class="btn-primary inline">Process Another PDF</a>
+    </section>
+
+    <section class="card bucket-panel">
+        <h3>PDF Storage Buckets</h3>
+        <p class="muted">This upload is now stored in: <strong>{{ result.main_bucket.label }} / {{ result.sub_bucket.label }}</strong></p>
+        {% if result.bucket_store %}
+            <div class="main-bucket-grid">
+                {% for main_bucket, sub_buckets in result.bucket_store.items() %}
+                    <article class="main-bucket-card">
+                        <h4>{{ main_bucket }}</h4>
+                        <div class="sub-bucket-grid">
+                            {% for sub_bucket, docs in sub_buckets.items() %}
+                                <div class="sub-bucket-card">
+                                    <h5>{{ sub_bucket }}</h5>
+                                    <ul>
+                                        {% for doc in docs %}
+                                            <li>{{ doc }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}
