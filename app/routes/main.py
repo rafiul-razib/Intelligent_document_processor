@@ -286,6 +286,33 @@ def preview_file(filename):
         return send_file(BytesIO(pix.tobytes("png")), mimetype="image/png")
 
 
+@main_bp.get("/bucket-files")
+def bucket_files():
+    main_bucket = str(request.args.get("main_bucket", "")).strip()
+    sub_bucket = str(request.args.get("sub_bucket", "")).strip()
+    if not main_bucket or not sub_bucket:
+        return "main_bucket and sub_bucket are required", 400
+
+    root_dir = Path(current_app.config["CATEGORY_STORAGE_ROOT"])
+    folder = get_bucket_folder(
+        root_dir=root_dir,
+        main_bucket=main_bucket,
+        sub_bucket=sub_bucket,
+    )
+    pdf_paths = list_bucket_pdfs(
+        root_dir=root_dir,
+        main_bucket=main_bucket,
+        sub_bucket=sub_bucket,
+    )
+    return render_template(
+        "bucket_files.html",
+        main_bucket=main_bucket,
+        sub_bucket=sub_bucket,
+        folder_path=str(folder),
+        pdf_files=[path.name for path in pdf_paths],
+    )
+
+
 # =========================
 # STATE API
 # =========================
