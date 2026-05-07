@@ -58,9 +58,6 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
     logger.warning("GEMINI_API_KEY is not set")
-else:
-    masked_key = f"{GEMINI_API_KEY[:4]}...{GEMINI_API_KEY[-4:]}" if len(GEMINI_API_KEY) >= 8 else "***"
-    logger.info("GEMINI_API_KEY loaded: %s", masked_key)
 
 MODEL = "gemini-2.0-flash"
 _ENV_MODEL = os.getenv("GEMINI_MODEL", "").strip()

@@ -1419,12 +1419,6 @@
         </div>
         <div class="topbar-actions">
           <button
-            class="btn btn-ghost btn-sm"
-            onclick="showNotif('Export complete')"
-          >
-            ⬇ Export CSV
-          </button>
-          <button
             class="btn btn-primary btn-sm"
             onclick="showView('upload', null)"
           >
@@ -2117,19 +2111,19 @@
           const response = await fetch("/api/gemini-health");
           const payload = await response.json();
           if (!response.ok || !payload.connected) {
-            console.error("[Gemini Health] Not connected:", payload);
+            // console.error("[Gemini Health] Not connected:", payload);
             showNotif(payload.message || "Gemini connection failed.");
             return false;
           }
-          console.log("[Gemini Health] Connected");
-          console.log("[Gemini Health] Response:", payload.response);
+          // console.log("[Gemini Health] Connected");
+          // console.log("[Gemini Health] Response:", payload.response);
           if (payload.response?.raw_response_text) {
-            console.log("[Gemini Health] Raw response text:");
-            console.log(payload.response.raw_response_text);
+            // console.log("[Gemini Health] Raw response text:");
+            // console.log(payload.response.raw_response_text);
           }
           return true;
         } catch (error) {
-          console.error("[Gemini Health] Error:", error);
+          // console.error("[Gemini Health] Error:", error);
           showNotif("Could not verify Gemini connection.");
           return false;
         }
@@ -2392,7 +2386,7 @@
           clearInterval(timerInterval);
           applyCompletedResult(payload.result);
         } catch (error) {
-          console.error("[Gemini/API Error] Upload flow exception:", error);
+          // console.error("[Gemini/API Error] Upload flow exception:", error);
           clearInterval(timerInterval);
           showNotif(error.message || "Upload failed");
         }
@@ -2423,7 +2417,7 @@
         }
         clearInterval(timerInterval);
         if (payload.status === "failed" || payload.status === "ocr_failed") {
-          console.error("[Gemini/API Error] Job failed payload:", payload);
+          // console.error("[Gemini/API Error] Job failed payload:", payload);
           showNotif(payload.error || payload.message || "OCR job failed");
           return;
         }
@@ -2438,11 +2432,11 @@
         currentResult = result;
         incrementTokenMetricsForResult(result);
         const tokenUsage = result?.ai_identification?.token_usage || {};
-        console.log(
-          "[Gemini Token Usage]",
-          result?.file_name || "unknown-file",
-          tokenUsage,
-        );
+        // console.log(
+        //   "[Gemini Token Usage]",
+        //   result?.file_name || "unknown-file",
+        //   tokenUsage,
+        // );
         logExtractionToConsole(result);
         markStepDone(
           "step-extract-icon",
@@ -2477,22 +2471,22 @@
         const extractedText = result?.preprocess?.text || "";
         const sourceLanguage = result?.preprocess?.source_language || "unknown";
         const translated = Boolean(result?.preprocess?.translated_to_english);
-        console.log("=== Document Extraction Output ===");
-        console.log("File:", result?.file_name || "unknown");
-        console.log("Extractor:", extractor);
-        console.log("OCR used:", Boolean(result?.preprocess?.ocr_used));
-        console.log("Source language:", sourceLanguage);
-        console.log("Translated to English:", translated);
-        console.log("Extracted text preview:");
-        console.log(extractedText.slice(0, 5000));
+        // console.log("=== Document Extraction Output ===");
+        // console.log("File:", result?.file_name || "unknown");
+        // console.log("Extractor:", extractor);
+        // console.log("OCR used:", Boolean(result?.preprocess?.ocr_used));
+        // console.log("Source language:", sourceLanguage);
+        // console.log("Translated to English:", translated);
+        // console.log("Extracted text preview:");
+        // console.log(extractedText.slice(0, 5000));
         const ai = result?.ai_identification || {};
-        console.log("Gemini operation:", ai.operation || "off");
-        console.log("AI model/source:", ai.model || "—");
+        // console.log("Gemini operation:", ai.operation || "off");
+        // console.log("AI model/source:", ai.model || "—");
         if (ai.gemini_response_preview) {
-          console.log("Gemini response preview:");
-          console.log(String(ai.gemini_response_preview));
+          // console.log("Gemini response preview:");
+          // console.log(String(ai.gemini_response_preview));
         }
-        console.log("=================================");
+        // console.log("=================================");
       }
 
       function buildTranslationBadge(preprocess, forHtml = false) {
@@ -2533,18 +2527,18 @@
       }
 
       function showResult(result) {
-        console.log("[AI Response] Full result object:", result);
+        // console.log("[AI Response] Full result object:", result);
         if (result?.ai_identification) {
-          console.log(
-            "[AI Response] ai_identification:",
-            result.ai_identification,
-          );
+          // console.log(
+          //   "[AI Response] ai_identification:",
+          //   result.ai_identification,
+          // );
         }
         if (result?.ai_identification?.gemini_response_preview) {
-          console.log(
-            "[AI Response] Gemini response preview:",
-            result.ai_identification.gemini_response_preview,
-          );
+          // console.log(
+          //   "[AI Response] Gemini response preview:",
+          //   result.ai_identification.gemini_response_preview,
+          // );
         }
         document.getElementById("result-wrap").style.display = "block";
         const mainPill = document.getElementById("result-main-pill");
@@ -3037,9 +3031,9 @@
           msg,
         );
         if (isError) {
-          console.error("[ADP Notification]", msg);
+          // console.error("[ADP Notification]", msg);
         } else {
-          console.info("[ADP Notification]", msg);
+          // console.info("[ADP Notification]", msg);
         }
         document.getElementById("notif-text").textContent = msg;
         notif.classList.add("show");
