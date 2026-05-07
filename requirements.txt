@@ -82,7 +82,7 @@ pydantic_core==2.46.3
 Pygments==2.20.0
 PyMuPDF==1.27.2.3
 pyparsing==3.3.2
-python-bidi==0.6.7
+python-bidi==0.4.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
 PyYAML==6.0.3
