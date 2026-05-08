@@ -14,8 +14,13 @@ class Config:
 
     UPLOAD_FOLDER = BASE_DIR / "data" / "uploads"
     PROCESSED_FOLDER = BASE_DIR / "data" / "processed"
+    _default_storage_root = (
+        "C:/PDF_Classifier_Categories"
+        if os.name == "nt"
+        else "/tmp/PDF_Classifier_Categories"
+    )
     CATEGORY_STORAGE_ROOT = Path(
-        os.getenv("CATEGORY_STORAGE_ROOT", "/tmp/PDF_Classifier_Categories")
+        os.getenv("CATEGORY_STORAGE_ROOT", _default_storage_root)
     )
     ALLOWED_EXTENSIONS = {"pdf"}
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()

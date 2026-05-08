@@ -252,7 +252,7 @@
         flex-shrink: 0;
       }
       .mobile-menu-btn {
-        display: none;
+        display: none !important;
       }
       .topbar-title {
         font-family: var(--display);
@@ -288,6 +288,13 @@
         border: none;
         transition: all 0.15s;
         font-family: var(--font);
+      }
+      .btn:disabled {
+        background: #b9b9b9 !important;
+        border-color: #b9b9b9 !important;
+        color: #f4f4f4 !important;
+        cursor: not-allowed;
+        opacity: 1;
       }
       .btn-primary {
         background: var(--accent);
@@ -329,7 +336,7 @@
       }
       .stats-row {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 14px;
         margin-bottom: 28px;
       }
@@ -1180,9 +1187,6 @@
         display: none;
       }
       @media (max-width: 1400px) {
-        .stats-row {
-          grid-template-columns: repeat(2, 1fr);
-        }
         .info-grid {
           grid-template-columns: repeat(2, 1fr);
         }
@@ -1292,6 +1296,17 @@
         .info-grid {
           grid-template-columns: 1fr;
         }
+        .stats-row {
+          justify-items: center;
+        }
+        .stat-card {
+          width: min(100%, 520px);
+          text-align: center;
+        }
+        .stat-sub {
+          display: flex;
+          justify-content: center;
+        }
         .breakdown-grid {
           grid-template-columns: 1fr;
         }
@@ -1323,12 +1338,24 @@
       @media (max-width: 1100px) {
         .stats-row {
           grid-template-columns: repeat(2, 1fr);
+          justify-items: center;
+        }
+        .stats-row .stat-card:nth-child(3) {
+          grid-column: 1 / -1;
+        }
+        .stat-card {
+          width: 100%;
+          text-align: center;
+        }
+        .stat-sub {
+          display: flex;
+          justify-content: center;
         }
         .buckets-grid {
           grid-template-columns: 1fr;
         }
         .mobile-menu-btn {
-          display: inline-flex;
+          display: inline-flex !important;
           align-items: center;
           justify-content: center;
         }
@@ -1441,13 +1468,6 @@
               <div class="stat-num" id="stat-processed-today">0</div>
               <div class="stat-sub">
                 <span class="stat-chip chip-up">Today's Gemini usage</span>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Avg Tokens / Document</div>
-              <div class="stat-num" id="stat-pending-ocr">0</div>
-              <div class="stat-sub">
-                <span class="stat-chip chip-warn">Gemini token usage</span>
               </div>
             </div>
             <div class="stat-card">
@@ -1896,22 +1916,6 @@
           <div class="modal-info">
             <div class="modal-info-title">Extracted Info</div>
             <div id="modal-fields"></div>
-            <div class="correct-section">
-              <div class="correct-label">Correct Label</div>
-              <select
-                class="select"
-                id="modal-correction-select"
-                onchange="showNotif('Correction saved · Retraining queued')"
-              >
-                <option value="">— Mark correction —</option></select
-              ><button
-                class="btn btn-ghost btn-sm"
-                style="width: 100%"
-                onclick="showNotif('Correction logged for review')"
-              >
-                Log Correction
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -1954,6 +1958,25 @@
 
       let CLASSIFICATION_OPTIONS = [];
       const TOKEN_METRICS_STORAGE_KEY = "adp_token_metrics_v1";
+      async function deleteDocFromUploads(fileName) {
+        const decoded = decodeURIComponent(fileName);
+        const response = await fetch(
+          `/api/documents/${encodeURIComponent(decoded)}`,
+          { method: "DELETE" },
+        );
+        const payload = await response.json();
+        if (!response.ok || payload.status !== "ok") {
+          showNotif(payload.message || "Could not delete document.");
+          return;
+        }
+        if (currentResult?.file_name === decoded) {
+          currentResult = null;
+          document.getElementById("result-wrap").style.display = "none";
+        }
+        closeModal();
+        await fetchState();
+        showNotif(`${decoded} deleted from uploads.`);
+      }
 
       function getTodayKey() {
         const now = new Date();
@@ -2189,9 +2212,6 @@
         );
         document.getElementById("correction-select").innerHTML =
           options.join("");
-        document.getElementById("modal-correction-select").innerHTML =
-          `<option value="">— Mark correction —</option>` +
-          options.slice(1).join("");
       }
 
       function renderDashboard() {
@@ -2207,8 +2227,6 @@
           summary.total_documents;
         document.getElementById("stat-processed-today").textContent =
           Number(todayAvgFromLocal).toFixed(1);
-        document.getElementById("stat-pending-ocr").textContent =
-          Number(globalAvgFromLocal).toFixed(1);
         document.getElementById("stat-model-accuracy").textContent =
           `${summary.model_accuracy}%`;
 
@@ -2224,7 +2242,10 @@
       <td><span class="mono">${escapeHtml(d.entities.date || "—")}</span></td>
       <td>${escapeHtml(d.entities.from_company || d.entities.to_company || "—")}</td>
       <td><span class="status-dot s-done"></span> Ready</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openDocModal('${encodeURIComponent(d.file_name)}')">View</button></td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openDocModal('${encodeURIComponent(d.file_name)}')">View</button>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteDocFromUploads('${encodeURIComponent(d.file_name)}')">Delete</button>
+      </td>
     </tr>
   `,
           )
@@ -2667,6 +2688,12 @@
           return;
         }
         currentResult = payload.result;
+        const saveBtn = document.getElementById("classified-group-btn");
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.textContent = "Saved";
+          saveBtn.title = "Already saved";
+        }
         updateSaveButtonLabel("");
         await fetchState();
         filterBucket(encodeURIComponent(currentResult.main_bucket.label));
@@ -2681,6 +2708,14 @@
         const saveBtn = document.getElementById("classified-group-btn");
         const aiBtn = document.getElementById("ai-identify-btn");
         const reviewBtn = document.getElementById("need-review-btn");
+        if (result?.is_finalized) {
+          saveBtn.disabled = true;
+          saveBtn.textContent = "Saved";
+          saveBtn.title = "Already saved";
+          reviewBtn.style.display = "none";
+          aiBtn.style.display = "none";
+          return;
+        }
         const needs = Boolean(result?.needs_ai_identification);
         const identified = Boolean(result?.ai_identified);
         const correction = (

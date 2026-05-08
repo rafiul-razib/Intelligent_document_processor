@@ -20,6 +20,7 @@ from werkzeug.utils import secure_filename
 
 from app.services.gemini_identify import identify_document_with_gemini
 from app.services.documents import (
+    delete_document,
     get_bucket_store,
     get_company_groups,
     get_documents,
@@ -284,6 +285,28 @@ def preview_file(filename):
         page = doc.load_page(0)
         pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
         return send_file(BytesIO(pix.tobytes("png")), mimetype="image/png")
+
+
+@main_bp.delete("/api/documents/<path:file_name>")
+def api_delete_document(file_name):
+    safe_name = secure_filename(file_name)
+    if not safe_name:
+        return jsonify({"status": "error", "message": "Invalid file name"}), 400
+
+    upload_path = Path(current_app.config["UPLOAD_FOLDER"]) / safe_name
+    deleted_file = False
+    if upload_path.exists() and upload_path.is_file():
+        try:
+            upload_path.unlink()
+            deleted_file = True
+        except Exception as exc:  # noqa: BLE001
+            return jsonify({"status": "error", "message": str(exc)}), 500
+
+    deleted_record = delete_document(safe_name)
+    if not deleted_file and not deleted_record:
+        return jsonify({"status": "error", "message": "Document not found"}), 404
+
+    return jsonify({"status": "ok", "file_name": safe_name})
 
 
 @main_bp.get("/bucket-files")

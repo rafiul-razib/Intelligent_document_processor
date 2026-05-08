@@ -40,6 +40,10 @@ def get_document(file_name: str) -> dict | None:
     return deepcopy(doc) if doc else None
 
 
+def delete_document(file_name: str) -> bool:
+    return _DOCUMENTS.pop(file_name, None) is not None
+
+
 # =========================
 # BUCKET VIEW
 # =========================
@@ -67,7 +71,9 @@ def get_summary() -> dict:
     docs = get_documents()
 
     total_documents = len(docs)
-    today_utc = datetime.now(timezone.utc).date()
+    now_utc = datetime.now(timezone.utc)
+    today_utc = now_utc.date()
+    month_key = (now_utc.year, now_utc.month)
 
     # Track sources instead of OCR
     source_counts = defaultdict(int)
@@ -94,6 +100,7 @@ def get_summary() -> dict:
         else 0
     )
     docs_today: list[dict] = []
+    docs_this_month: list[dict] = []
     for doc in docs:
         created_at = str(doc.get("created_at") or "").strip()
         if not created_at:
@@ -102,8 +109,11 @@ def get_summary() -> dict:
             created_dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
             if created_dt.tzinfo is None:
                 created_dt = created_dt.replace(tzinfo=timezone.utc)
-            if created_dt.astimezone(timezone.utc).date() == today_utc:
+            created_utc = created_dt.astimezone(timezone.utc)
+            if created_utc.date() == today_utc:
                 docs_today.append(doc)
+            if (created_utc.year, created_utc.month) == month_key:
+                docs_this_month.append(doc)
         except Exception:  # noqa: BLE001
             continue
     today_token_totals = [
@@ -121,6 +131,16 @@ def get_summary() -> dict:
         if today_token_totals
         else 0
     )
+    month_total_tokens = sum(
+        int(
+            ((doc.get("ai_identification") or {}).get("token_usage") or {}).get(
+                "total_tokens",
+                0,
+            )
+            or 0
+        )
+        for doc in docs_this_month
+    )
 
     # Bucket breakdown
     breakdown: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
@@ -135,6 +155,7 @@ def get_summary() -> dict:
         "pending_ocr": avg_tokens_per_document,
         "avg_tokens_per_document": avg_tokens_per_document,
         "today_avg_tokens_per_document": today_avg_tokens_per_document,
+        "month_total_tokens": month_total_tokens,
         "model_accuracy": accuracy_estimate,
         "source_distribution": dict(source_counts),
         "data_completeness": accuracy_estimate,  # replaces fake confidence
