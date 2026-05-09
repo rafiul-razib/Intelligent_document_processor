@@ -9,6 +9,9 @@
     .card { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 16px; max-width: 900px; }
     h1 { margin-top: 0; font-size: 20px; }
     .muted { color: #666; font-size: 13px; }
+    .actions { display: flex; gap: 10px; margin: 12px 0 6px; flex-wrap: wrap; }
+    .btn { display: inline-block; padding: 8px 12px; border-radius: 6px; text-decoration: none; font-size: 13px; border: 1px solid #d0d0d0; background: #f8f8f8; color: #222; }
+    .btn.primary { background: #d97b20; border-color: #d97b20; color: #fff; }
     ul { margin-top: 12px; }
     li { margin: 6px 0; }
     code { background: #f2f2f2; padding: 2px 6px; border-radius: 4px; }
@@ -18,6 +21,10 @@
   <div class="card">
     <h1>{{ main_bucket }} / {{ sub_bucket }}</h1>
     <p class="muted">Folder: <code>{{ folder_path }}</code></p>
+    <div class="actions">
+      <a class="btn primary" href="{{ export_bucket_url }}">Download This Bucket (.zip)</a>
+      <a class="btn" href="{{ export_all_url }}">Download All Classified (.zip)</a>
+    </div>
     {% if pdf_files %}
       <ul>
         {% for name in pdf_files %}

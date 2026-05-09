@@ -3,6 +3,8 @@ from io import BytesIO
 import logging
 import threading
 import uuid
+import zipfile
+from datetime import datetime
 
 from flask import (
     Blueprint,
@@ -69,6 +71,39 @@ def _needs_ai_identification(entities: dict) -> bool:
     return not any(str(entities.get(f, "")).strip() for f in required_fields)
 
 
+def _looks_like_garbled_ocr_text(text: str) -> bool:
+    sample = (text or "").strip()[:5000]
+    if not sample:
+        return True
+    total = len(sample)
+    if total == 0:
+        return True
+    alpha_num = sum(1 for ch in sample if ch.isalnum())
+    weird = sum(
+        1
+        for ch in sample
+        if (ord(ch) < 32 and ch not in "\n\r\t") or ord(ch) == 0xFFFD
+    )
+    long_symbol_runs = 0
+    run = 0
+    for ch in sample:
+        if not ch.isalnum() and not ch.isspace():
+            run += 1
+            if run >= 4:
+                long_symbol_runs += 1
+                run = 0
+        else:
+            run = 0
+
+    alpha_num_ratio = alpha_num / total
+    weird_ratio = weird / total
+    return (
+        alpha_num_ratio < 0.35
+        or weird_ratio > 0.01
+        or long_symbol_runs >= 4
+    )
+
+
 def _set_doc_status(doc_id: str, **updates) -> None:
     with _DOC_STATUS_LOCK:
         _DOC_STATUS.setdefault(doc_id, {}).update(updates)
@@ -92,12 +127,22 @@ def _build_pipeline_result(upload_path: Path, preprocess_result: dict) -> dict:
     ocr_method = str(preprocess_result.get("ocr_method", ""))
     extracted_text = str(preprocess_result.get("text", "")).strip()
     quality_score = float(preprocess_result.get("ocr_quality_score", 0.0))
+    garbled_ocr = _looks_like_garbled_ocr_text(extracted_text)
     # If OCR/native extraction is too sparse or noisy, send original PDF to Gemini.
     force_binary = (
         ocr_method == "ocr_degraded"
         or not extracted_text
-        or (ocr_method.startswith("ocr") and len(extracted_text) < 120)
-        or quality_score < 0.35
+        or len(extracted_text) < 120
+        or quality_score < 0.90
+        or garbled_ocr
+    )
+    logger.info(
+        "Original doc sent to Gemini: %s (method=%s, quality=%.3f, garbled=%s, text_len=%d)",
+        force_binary,
+        ocr_method,
+        quality_score,
+        garbled_ocr,
+        len(extracted_text),
     )
     gemini = identify_document_with_gemini(
         extracted_text=extracted_text,
@@ -142,6 +187,7 @@ def _build_pipeline_result(upload_path: Path, preprocess_result: dict) -> dict:
             "prompt": "Extract structured fields and classify document.",
             "gemini_response_preview": gemini.get("raw_response_text", ""),
             "token_usage": gemini.get("token_usage", {}),
+            "sent_original_doc_to_gemini": force_binary,
         },
 
         "is_finalized": False,
@@ -166,6 +212,11 @@ def _persist_result(result: dict) -> dict:
 
     finalized["category_storage_path"] = str(category_copy_path)
     finalized["is_finalized"] = True
+    finalized["download_url"] = (
+        f"/api/download/classified/{finalized['file_name']}"
+        f"?main_bucket={finalized['main_bucket']['label']}"
+        f"&sub_bucket={finalized['sub_bucket']['label']}"
+    )
 
     return save_document(finalized)
 
@@ -309,6 +360,36 @@ def api_delete_document(file_name):
     return jsonify({"status": "ok", "file_name": safe_name})
 
 
+@main_bp.get("/api/download/classified/<path:file_name>")
+def api_download_classified_file(file_name):
+    safe_name = secure_filename(file_name)
+    if not safe_name:
+        return jsonify({"status": "error", "message": "Invalid file name"}), 400
+
+    main_bucket = str(request.args.get("main_bucket", "")).strip()
+    sub_bucket = str(request.args.get("sub_bucket", "")).strip()
+
+    if main_bucket and sub_bucket:
+        root_dir = Path(current_app.config["CATEGORY_STORAGE_ROOT"])
+        bucket_folder = get_bucket_folder(
+            root_dir=root_dir,
+            main_bucket=main_bucket,
+            sub_bucket=sub_bucket,
+        )
+        file_path = bucket_folder / safe_name
+        if file_path.exists() and file_path.is_file():
+            safe_main = "".join(c if c.isalnum() else "_" for c in main_bucket)
+            safe_sub = "".join(c if c.isalnum() else "_" for c in sub_bucket)
+            download_name = f"{safe_main}__{safe_sub}__{safe_name}"
+            return send_file(file_path, as_attachment=True, download_name=download_name)
+
+    upload_path = Path(current_app.config["UPLOAD_FOLDER"]) / safe_name
+    if upload_path.exists() and upload_path.is_file():
+        return send_file(upload_path, as_attachment=True, download_name=safe_name)
+
+    return jsonify({"status": "error", "message": "File not found"}), 404
+
+
 @main_bp.get("/bucket-files")
 def bucket_files():
     main_bucket = str(request.args.get("main_bucket", "")).strip()
@@ -333,6 +414,73 @@ def bucket_files():
         sub_bucket=sub_bucket,
         folder_path=str(folder),
         pdf_files=[path.name for path in pdf_paths],
+        export_bucket_url=(
+            f"/api/export/bucket?main_bucket={main_bucket}&sub_bucket={sub_bucket}"
+        ),
+        export_all_url="/api/export/all",
+    )
+
+
+@main_bp.get("/api/export/bucket")
+def api_export_bucket_zip():
+    main_bucket = str(request.args.get("main_bucket", "")).strip()
+    sub_bucket = str(request.args.get("sub_bucket", "")).strip()
+    if not main_bucket or not sub_bucket:
+        return jsonify({"status": "error", "message": "main_bucket and sub_bucket are required"}), 400
+
+    root_dir = Path(current_app.config["CATEGORY_STORAGE_ROOT"])
+    pdf_paths = list_bucket_pdfs(
+        root_dir=root_dir,
+        main_bucket=main_bucket,
+        sub_bucket=sub_bucket,
+    )
+    if not pdf_paths:
+        return jsonify({"status": "error", "message": "No PDFs found for this bucket"}), 404
+
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for pdf_path in pdf_paths:
+            if pdf_path.exists() and pdf_path.is_file():
+                zf.write(pdf_path, arcname=pdf_path.name)
+    buffer.seek(0)
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    safe_main = "".join(c if c.isalnum() else "_" for c in main_bucket)
+    safe_sub = "".join(c if c.isalnum() else "_" for c in sub_bucket)
+    download_name = f"{safe_main}_{safe_sub}_{timestamp}.zip"
+    return send_file(
+        buffer,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=download_name,
+    )
+
+
+@main_bp.get("/api/export/all")
+def api_export_all_zip():
+    root_dir = Path(current_app.config["CATEGORY_STORAGE_ROOT"])
+    if not root_dir.exists():
+        return jsonify({"status": "error", "message": "Classified storage folder not found"}), 404
+
+    pdf_paths = [path for path in root_dir.rglob("*.pdf") if path.is_file()]
+    if not pdf_paths:
+        return jsonify({"status": "error", "message": "No classified PDFs found"}), 404
+
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for pdf_path in pdf_paths:
+            try:
+                arcname = str(pdf_path.relative_to(root_dir))
+            except ValueError:
+                arcname = pdf_path.name
+            zf.write(pdf_path, arcname=arcname)
+    buffer.seek(0)
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    download_name = f"classified_pdfs_{timestamp}.zip"
+    return send_file(
+        buffer,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=download_name,
     )
 
 

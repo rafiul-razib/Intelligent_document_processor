@@ -2492,22 +2492,26 @@
         const extractedText = result?.preprocess?.text || "";
         const sourceLanguage = result?.preprocess?.source_language || "unknown";
         const translated = Boolean(result?.preprocess?.translated_to_english);
-        // console.log("=== Document Extraction Output ===");
-        // console.log("File:", result?.file_name || "unknown");
-        // console.log("Extractor:", extractor);
-        // console.log("OCR used:", Boolean(result?.preprocess?.ocr_used));
-        // console.log("Source language:", sourceLanguage);
-        // console.log("Translated to English:", translated);
-        // console.log("Extracted text preview:");
-        // console.log(extractedText.slice(0, 5000));
+        console.log("=== OCR Result ===");
+        console.log("File:", result?.file_name || "unknown");
+        console.log("Extractor:", extractor);
+        console.log("OCR used:", Boolean(result?.preprocess?.ocr_used));
+        console.log("Source language:", sourceLanguage);
+        console.log("Translated to English:", translated);
+        console.log("OCR text preview:");
+        console.log(extractedText.slice(0, 5000));
         const ai = result?.ai_identification || {};
-        // console.log("Gemini operation:", ai.operation || "off");
-        // console.log("AI model/source:", ai.model || "—");
+        console.log(
+          "Original doc sent to Gemini:",
+          Boolean(ai.sent_original_doc_to_gemini),
+        );
+        console.log("Gemini operation:", ai.operation || "off");
+        console.log("AI model/source:", ai.model || "—");
         if (ai.gemini_response_preview) {
-          // console.log("Gemini response preview:");
-          // console.log(String(ai.gemini_response_preview));
+          console.log("Gemini response preview:");
+          console.log(String(ai.gemini_response_preview));
         }
-        // console.log("=================================");
+        console.log("==================");
       }
 
       function buildTranslationBadge(preprocess, forHtml = false) {
@@ -2693,6 +2697,15 @@
           saveBtn.disabled = true;
           saveBtn.textContent = "Saved";
           saveBtn.title = "Already saved";
+        }
+        const downloadUrl = currentResult?.download_url;
+        if (downloadUrl) {
+          const link = document.createElement("a");
+          link.href = downloadUrl;
+          link.style.display = "none";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
         }
         updateSaveButtonLabel("");
         await fetchState();

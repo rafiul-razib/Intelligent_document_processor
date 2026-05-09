@@ -102,7 +102,7 @@ def identify_document_with_gemini(
     )
     logger.warning("Gemini runtime key in use: %s", masked_runtime_key)
 
-    prompt = _build_prompt()
+    prompt = _build_prompt(force_binary=force_binary)
 
     # =========================
     # 1. TEXT MODE (PyMuPDF)
@@ -121,6 +121,7 @@ def identify_document_with_gemini(
 
         parsed = _parse(result.get("text"))
         if parsed:
+            parsed = _ensure_company_name_pronunciation(parsed, gemini_api_key)
             parsed["success"] = True
             parsed["source"] = "pymupdf"
             parsed["token_usage"] = result.get("token_usage", {})
@@ -144,6 +145,7 @@ def identify_document_with_gemini(
 
         parsed = _parse(result.get("text"))
         if parsed:
+            parsed = _ensure_company_name_pronunciation(parsed, gemini_api_key)
             parsed["success"] = True
             parsed["source"] = "pdf"
             parsed["token_usage"] = result.get("token_usage", {})
@@ -167,6 +169,7 @@ def identify_document_with_gemini(
 
         parsed = _parse(result.get("text"))
         if parsed:
+            parsed = _ensure_company_name_pronunciation(parsed, gemini_api_key)
             parsed["success"] = True
             parsed["source"] = "image"
             parsed["token_usage"] = result.get("token_usage", {})
@@ -187,7 +190,7 @@ def identify_document_with_gemini(
 # PROMPT
 # =========================
 
-def _build_prompt() -> str:
+def _build_prompt(force_binary: bool = False) -> str:
     bucket_map = {
         "Transactional Documents": list(TRANSACTIONAL_SUB_BUCKETS),
         "Certifications": list(CERTIFICATION_SUB_BUCKETS),
@@ -225,8 +228,11 @@ Rules:
 - If uncertain, still choose the closest valid bucket; do not invent new labels.
 - If source document is not in English, translate extracted key information to English.
 - Keep translated values concise and faithful to the source meaning.
-- For non-English company names, provide an English-pronounceable transliteration
-  (romanized form) in `from_company` and `to_company`.
+- For non-English company names, DO NOT translate the name meaning.
+  Instead provide only an English-pronounceable transliteration (romanized form)
+  in `from_company` and `to_company`.
+- If the input is original PDF/image (not clean OCR text), first understand/translate
+  the full document content to English context before extracting the target fields.
 - Map extracted values into `entities` with exact keys:
   - `document_id`
   - `date`
@@ -234,7 +240,15 @@ Rules:
   - `to_company`
   - `quantity`
   - `product_material_name`
-- If any field is missing/unclear, return empty string for that field.
+- Mapping rule: Buyer company must be placed in `to_company`, and
+  Seller company must be placed in `from_company`.
+- Company-name quality rule (strict):
+  - Never output random tokens/noise like "trmm", "tii", "lfl!R" as company names.
+  - A valid company name should be readable and usually include business markers
+    such as "Co.", "Ltd.", "Company", "Textile", "Trade", etc., when present.
+  - Use context labels like Buyer/Seller/Purchaser/Supplier/From/To to identify parties.
+  - If company name cannot be confidently recovered, return empty string for that field.
+- If any target field is missing/unclear, return empty string for that field (do not guess).
 - Do NOT add explanation
 """
 
@@ -357,8 +371,14 @@ def _parse(text: str | None) -> dict | None:
         normalized_entities = {
             "document_id": entities.get("document_id", entities.get("doc_id", "")),
             "date": entities.get("date", ""),
-            "from_company": entities.get("from_company", entities.get("from", "")),
-            "to_company": entities.get("to_company", entities.get("to", "")),
+            "from_company": entities.get(
+                "from_company",
+                entities.get("from", entities.get("seller", "")),
+            ),
+            "to_company": entities.get(
+                "to_company",
+                entities.get("to", entities.get("buyer", "")),
+            ),
             "quantity": entities.get("quantity", ""),
             "product_material_name": entities.get(
                 "product_material_name",
@@ -445,6 +465,101 @@ def _extract_usage_metadata(response: Any) -> dict[str, int]:
         "completion_tokens": completion_tokens,
         "total_tokens": total_tokens,
     }
+
+
+def _ensure_company_name_pronunciation(parsed: dict[str, Any], api_key: str) -> dict[str, Any]:
+    entities = parsed.get("entities", {})
+    if not isinstance(entities, dict):
+        return parsed
+    for key in ("from_company", "to_company"):
+        value = str(entities.get(key, "") or "").strip()
+        if value and _contains_cjk(value):
+            entities[key] = _romanize_company_name(api_key, value)
+    parsed["entities"] = entities
+    return parsed
+
+
+def _contains_cjk(text: str) -> bool:
+    for ch in text:
+        code = ord(ch)
+        if (
+            0x4E00 <= code <= 0x9FFF
+            or 0x3400 <= code <= 0x4DBF
+            or 0x20000 <= code <= 0x2A6DF
+        ):
+            return True
+    return False
+
+
+def _romanize_company_name(api_key: str, company_name: str) -> str:
+    fallback = _pinyin_company_name(company_name)
+    try:
+        client = genai.Client(api_key=api_key)
+        prompt = (
+            "Convert this company name into a clean English-readable company name. "
+            "If Chinese, produce high-quality romanization and keep company suffixes readable "
+            "(e.g., Co., Ltd.). Do not output random abbreviations. Output plain text only.\n"
+            f"Company name: {company_name}"
+        )
+        for model_name in _discover_model_candidates(client):
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[prompt],
+                )
+                text = _extract_response_text(response).strip()
+                if text and _is_reasonable_company_name(text):
+                    return text.replace("\n", " ").strip()
+            except Exception:
+                continue
+    except Exception:
+        return fallback
+    return fallback
+
+
+def _is_reasonable_company_name(name: str) -> bool:
+    cleaned = (name or "").strip()
+    if len(cleaned) < 6:
+        return False
+    letters = [ch for ch in cleaned if ch.isalpha()]
+    if len(letters) < 5:
+        return False
+    vowels = sum(ch.lower() in "aeiou" for ch in letters)
+    if vowels == 0:
+        return False
+    words = [w for w in re.split(r"[\s,.-]+", cleaned) if w]
+    if len(words) < 2:
+        return False
+    # Reject obviously noisy short outputs like "trmm"
+    if len(words) == 1 and len(cleaned) <= 8:
+        return False
+    return True
+
+
+def _pinyin_company_name(company_name: str) -> str:
+    text = str(company_name or "").strip()
+    if not text:
+        return ""
+    # Common Chinese legal suffix normalization.
+    suffix = ""
+    base = text
+    if "有限公司" in text:
+        base = text.replace("有限公司", "").strip()
+        suffix = " Co., Ltd."
+
+    try:
+        from pypinyin import lazy_pinyin  # type: ignore
+
+        parts = lazy_pinyin(base)
+        romanized = " ".join(part.capitalize() for part in parts if str(part).strip())
+        romanized = re.sub(r"\s{2,}", " ", romanized).strip()
+        if romanized:
+            return f"{romanized}{suffix}".strip()
+    except Exception:
+        pass
+
+    # If pypinyin is unavailable, keep original instead of bad guess.
+    return text
 
 
 
