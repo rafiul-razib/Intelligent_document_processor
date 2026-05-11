@@ -339,7 +339,23 @@ def extract_text_from_pdf_details(pdf_path: str) -> dict[str, object]:
 
     lang_code = str(native_probe["lang_code"])
     langs = map_lang_to_easyocr(lang_code)
-    reader = get_reader(langs)
+    try:
+        reader = get_reader(langs)
+    except Exception as exc:  # noqa: BLE001
+        logger.error(
+            "EasyOCR reader init failed for %s with langs=%s: %s",
+            path.name,
+            langs,
+            exc,
+        )
+        # Degrade gracefully so upstream can send original doc to Gemini.
+        return {
+            "text": "",
+            "method": "ocr_degraded",
+            "lang_code": lang_code,
+            "translated_to_english": False,
+            "translation_error": str(exc),
+        }
     logger.info("Using OCR extraction for %s with langs=%s", path.name, langs)
 
     ocr_pages: list[str] = []
