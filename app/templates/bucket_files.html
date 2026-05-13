@@ -3,37 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bucket Files</title>
+  <title>Bucket — Intelligent Document Processor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; margin: 24px; background: #f7f7f7; color: #222; }
-    .card { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 16px; max-width: 900px; }
-    h1 { margin-top: 0; font-size: 20px; }
-    .muted { color: #666; font-size: 13px; }
-    .actions { display: flex; gap: 10px; margin: 12px 0 6px; flex-wrap: wrap; }
-    .btn { display: inline-block; padding: 8px 12px; border-radius: 6px; text-decoration: none; font-size: 13px; border: 1px solid #d0d0d0; background: #f8f8f8; color: #222; }
-    .btn.primary { background: #d97b20; border-color: #d97b20; color: #fff; }
-    ul { margin-top: 12px; }
-    li { margin: 6px 0; }
-    code { background: #f2f2f2; padding: 2px 6px; border-radius: 4px; }
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: rgba(15, 23, 42, 0.08);
+      --accent: #4f46e5;
+      --accent2: #0891b2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+      color: var(--text);
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(ellipse 100% 80% at 100% 0%, rgba(79, 70, 229, 0.09) 0%, transparent 50%),
+        radial-gradient(ellipse 80% 60% at 0% 100%, rgba(34, 211, 238, 0.08) 0%, transparent 45%);
+      background-attachment: fixed;
+      padding: 32px 20px 48px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 880px; margin: 0 auto; }
+    .brand {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+    .brand span {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 28px 24px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px rgba(15, 23, 42, 0.06);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+    .muted { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    code {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+      background: #f1f5f9;
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: #334155;
+    }
+    .actions { display: flex; gap: 10px; margin: 20px 0 8px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: var(--text);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08); }
+    .btn.primary {
+      background: linear-gradient(135deg, #4f46e5 0%, #4338ca 55%, #0891b2 100%);
+      border: none;
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.35);
+    }
+    .btn.primary:hover { box-shadow: 0 10px 28px rgba(79, 70, 229, 0.42); }
+    ul { margin: 16px 0 0; padding-left: 22px; }
+    li { margin: 8px 0; font-size: 14px; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>{{ main_bucket }} / {{ sub_bucket }}</h1>
-    <p class="muted">Folder: <code>{{ folder_path }}</code></p>
-    <div class="actions">
-      <a class="btn primary" href="{{ export_bucket_url }}">Download This Bucket (.zip)</a>
-      <a class="btn" href="{{ export_all_url }}">Download All Classified (.zip)</a>
+  <div class="wrap">
+    <div class="brand"><span>Intelligent Document Processor</span></div>
+    <div class="card">
+      <h1>{{ main_bucket }} / {{ sub_bucket }}</h1>
+      <p class="muted">Folder: <code>{{ folder_path }}</code></p>
+      <div class="actions">
+        <a class="btn primary" href="{{ export_bucket_url }}">Download this bucket (.zip)</a>
+        <a class="btn" href="{{ export_all_url }}">Download all classified (.zip)</a>
+      </div>
+      {% if pdf_files %}
+        <ul>
+          {% for name in pdf_files %}
+            <li>{{ name }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted" style="margin-top: 20px;">No PDFs found in this folder yet.</p>
+      {% endif %}
     </div>
-    {% if pdf_files %}
-      <ul>
-        {% for name in pdf_files %}
-          <li>{{ name }}</li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>No PDFs found in this folder yet.</p>
-    {% endif %}
   </div>
 </body>
 </html>
